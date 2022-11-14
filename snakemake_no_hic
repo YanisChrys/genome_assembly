@@ -1,0 +1,531 @@
+# Genome Assembly: Overall workflow
+#import csv
+#import warnings
+#import pysam
+import re
+import os
+
+# to do : decide the folder architecture of the project
+# todo : look into using kraken
+
+configfile: "config.yaml"
+
+# partition parts of each job
+# number of threads to use
+# log level
+# database to use for BUSCO
+# if error add zip after string?
+# INPUT_SUBREADS=f"{SUBREADS_PATH}""/{subreadfile}.subreads.bam" 
+# INPUT_HIFI=f"{HIFI_READS_PATH}""/{hififile}.vcf.gz" 
+
+############  SET UP PATH TO INPUT FILES AND FILE NAME STEMS AND SAVE THEM AS WILDCARDS  ############
+# make sure to get the location and name of the input file and notify the user if an input is missing
+
+SUBREADS=config["SUBREADS"]
+HIFI=config["HIFI"]
+
+if SUBREADS: 
+    SUBREADS_PATH=os.path.dirname(SUBREADS)
+    SUBREADS_FILE=os.path.basename(SUBREADS).split('.')[0] 
+else: 
+    print("Subreads not provided.")
+
+if HIFI: 
+    HIFI_READS_PATH=os.path.dirname(HIFI)
+    HIFI_READS_FILE=os.path.basename(HIFI).split('.')[0]
+else: 
+    print("ccs HiFi reads not provided.")
+
+# subreads and fasta hifi reads must be a single file.
+# hifi reads are circular and will be generated from subreads
+# separate the ccs step and only include it if we have subreads but not hifi reads
+#if SUBREADS and not HIFI:
+#    include: "ccs.smk"
+
+
+
+############  RULE ALL  ############
+
+
+
+BRIDGE=['a_ctg','p_ctg','p_ctg','r_utg']
+# Terminal node:
+rule all:
+    input:
+        #expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}.ccs.bam.pbi", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}.ccs.fastq.gz", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/linear_plot.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/log_plot.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/model.txt", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/progress.txt", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/summary.txt", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/transformed_linear_plot.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subfile}/transformed_log_plot.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subfile}.st.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subfile}.fi.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subfile}.ln.png", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subfile}.pdf", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subfile}.{bridge}.{extension}", bridge=BRIDGE, extension=['gfa','lowQ.bed','noseq.gfa'], subfile=SUBREADS_FILE, allow_missing=True),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subfile}.a_ctgl2.fasta", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subfile}_", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subfile}_short_summary.json", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subfile}_short_summary.txt", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subfile}_full_table.tsv", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subfile}_busco_missing.tsv", subfile=SUBREADS_FILE),
+        expand("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subfile}_seqs.purged", subfile=SUBREADS_FILE)
+
+
+
+
+############  PRIMARY PREPROCESSING MODULE  ############
+############  IF READS ARE NOT CIRCULAR  ############
+
+
+# 1) run ccs to create circular hifi reads
+# todo: limit ram memory usage (16g)
+rule RUN_CCS:
+    input:
+        expand("{subpath}/{subfile}.subreads.bam", subpath=SUBREADS_PATH, subfile=SUBREADS_FILE)
+    output:
+        reads=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}.ccs.fastq.gz", subfile=SUBREADS_FILE),
+        #index=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}.ccs.bam.pbi", subfile=SUBREADS_FILE),
+        metrics=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}_metrics.json.gz", subfile=SUBREADS_FILE), 
+        report=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}_report.txt", subfile=SUBREADS_FILE)
+    threads:
+        config["CORES"]
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        index=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}.ccs.bam.pbi", subfile=SUBREADS_FILE),
+        metrics=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}_metrics.json.gz", subfile=SUBREADS_FILE), 
+        report=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subfile}_report.txt", subfile=SUBREADS_FILE)
+    log:
+        expand("RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.CCS_PACBIO.{subfile}.ccs.log", subfile=SUBREADS_FILE)
+    shell: """
+    # --chunk {params.chunk}
+        ccs {input} {output.reads} --num-threads {threads} --log-level {params.loglevel} --log-file {log} --report-file {output.report} --metrics-json {output.metrics}
+    """
+ 
+# 2) index if the ccs job was split and merged
+#rule INDEX_CCS:
+#    input:
+#        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.bam"
+#    output:
+#        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.bam.pbi"
+#    log:
+#        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING/CCS_PACBIO/{subreadfile}.pbindex.log"
+#    shell:
+#        "pbindex {input} "
+# picard AddOrReplaceReadGroups -I input.bam -O output.bam -RGID 4 -RGLB lib1 -RGPL illumina -RGPU unit1 -RGSM 20
+
+# get small dataset
+#samtools faidx fPhoPho.hap1.20220427.fa manual_scaffold_10 > phopho_scaffold_10.fasta
+#samtools view -h /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/m54345U_220303_154000.subreads.bam | head -n100 | samtools view -bo some_reads.bam
+#myrg=$(samtools view -H some_reads.bam | grep '^@RG')
+#picard AddOrReplaceReadGroups -I input.bam -O output.bam -RGID $myrg -RGLB lib1 -RGPL illumina -RGPU run1 -RGSM phopho
+
+# 3) convert bam to fasta format with bam2fasta if it was merged
+# but we can create it as a fasta from the get-go, see rule 1
+
+#rule CONVERT_TO_FASTQ:
+#    input:
+#        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.bam"
+#    output:
+#        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.fastq.gz"
+#    params:
+#        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs"
+#    log:
+#        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING/CCS_PACBIO/{subreadfile}.bam2fastq.log"
+#    shell:
+#        "bam2fastq -o {params} {input}'
+
+
+############  INITIALIZE PRIMARY STATISTICAL MODULE AND TABULAR ARRAY ############
+
+
+
+# 4) seqkit can be used to get some initial read statistics from the CCS reads
+# Do all (-a) statistics on the reads (quartiles of seq length, sum_gap, N50, etc)
+
+rule SEQKIT_CCS_STATS:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.fastq.gz"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/STATISTICS/{subreadfile}.ccs.readStats.txt>"
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.STATISTICS.{subreadfile}.seqkit.log"
+    shell: """
+        seqkit stats -a {input} > {output} 2> {log}
+    """
+
+ 
+# 5) FastK
+# kmers are k-sized string chunks - here it is DNA
+# FastK splits the DNA into kmers and counts how many timers it sees each one
+rule FASTK_TABLE:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.fastq.gz"
+    output:
+        ktab="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.ktab",
+        hist="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.hist"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.STATISTICS.{subreadfile}.fastk.log"
+    params:
+        out="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs",
+        temp="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/tmp",
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"]
+    envmodules:
+        "fastk/current"
+    shell: """
+        FastK -v -t1 -T{threads} -k40 -N{params.out} -P{params.temp} {input} 2> {log}
+    """
+
+############  GENOME SIZE ESTIMATE WITH GENESCOPE.FK  ############
+
+
+# 6) Histex histograg=input for Genescope.FK
+# Simplify FastK hist table
+# h=frequencies to be displayed
+# NOTE: consider exploring alterantive h values
+rule HISTEX:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.hist"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.hist.txt"
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.STATISTICS.{subreadfile}.histex.log"
+    envmodules:
+        "fastk/current"
+    shell: """
+        Histex -G {input} -h1000 > {output} 2> {log}
+    """
+
+# 7) Genescope.FK
+# test if just saying (directory() would work)
+#  plots describing genome properties such as genome size, heterozygosity, and repetitiveness
+rule GENESCOPE_FK:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.hist.txt"
+    output:
+        linplot="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/linear_plot.png",
+        log_plot="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/log_plot.png",
+        model="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/model.txt",
+        progress="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/progress.txt",
+        summary="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/summary.txt",
+        transformed_linear_plot="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/transformed_linear_plot.png",
+        transformed_log_plot="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/transformed_log_plot.png"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.STATISTICS.{subreadfile}.GeneScopeFK.log"
+    params:
+        inputfile="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{subreadfile}/",
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        kmersize=config["KMER"]
+    envmodules:
+        "genescopefk/current"
+    shell: """
+        GeneScopeFK.R -i {input} -o {params.inputfile} -k{params.kmersize} 2> {log}
+    """
+
+############  READ ANALYSIS  ############
+##########  MERQURY.FK MODULE  ##########
+
+# module path: /share/scientific_bin/merquryfk/current
+
+# 8) KatGC
+# 3D heat map or contour map of the frequency of a k-mer versus its' GC content
+# input=FastK ktab file (auto-detected)
+rule KATGC:
+    input:
+        hist="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.hist",
+        ktab="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.ktab"
+    output:
+        png1="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.st.png",
+        png2="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.fi.png",
+        png3="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ln.png"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.STATISTICS.{subreadfile}.KatGC.log"
+    params: 
+        subreadfile="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs",
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"]
+    envmodules:
+        "merquryfk/current"
+    shell: """
+        KatGC -T{threads} {params.subreadfile} 2> {log}
+    """
+
+# 9) PloidyPlot
+# useful in case the ploidy of your sample is unknown
+# input=FastK ktab file (auto-detected)
+# verbose and keep the table it creates
+# plot in pdf format
+rule PLOIDYPLOT:
+    input:
+        hist="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.hist",
+        ktab="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.ccs.ktab"
+    threads:
+        config["CORES"]    
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/PREPROCESSING.STATISTICS.{subreadfile}.PloidyPlot.log"
+    params: 
+        inp=lambda wildcards, output: output[0][:-4],
+        out="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/",
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"]
+    output:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{subreadfile}.pdf"
+    envmodules:
+        "merquryfk/current"
+    shell: """
+        PloidyPlot -T{threads} -vk -pdf -o{params.out} {params.inp} 2> {log}
+    """
+#PloidyPlot -vk -pdf -o"$(pwd)/" some_reads
+ 
+############  GENOME ASSEMBLY WITH HIFIASM  ############
+
+
+
+# 10) HiFiasm
+# also try -l0 and -l3 or others
+
+# l: 0-3 level of purging
+# primary: output a primary assembly and an alternate assembly
+# o: prefix of output files 
+# t: threads
+
+# inspired by:
+# https://snakemake-wrappers.readthedocs.io/en/latest/wrappers/hifiasm.html
+# Input: list of files
+# output: list of files that differ by their extension
+# run hifiasm so that if hic is provided it is used (else [" {hic1} {hic2}"] string will be empty)
+rule RUN_HIFIASM:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.fastq.gz"
+    output:
+        multiext("RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.",
+            "a_ctg.gfa",
+            "a_ctg.lowQ.bed",
+            "a_ctg.noseq.gfa",
+            "p_ctg.gfa",
+            "p_ctg.lowQ.bed",
+            "p_ctg.noseq.gfa",
+            "p_utg.gfa",
+            "p_utg.lowQ.bed",
+            "p_utg.noseq.gfa",
+            "r_utg.gfa",
+            "r_utg.lowQ.bed",
+            "r_utg.noseq.gfa",
+        )
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.hifiasm.log"
+    params: 
+        prefix="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}",
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"]
+#    resources:
+#        mem_mb=1024
+    shell: """
+        hifiasm -l2 -t {threads} --primary -o {params.prefix} {input} 2> {log}
+    """
+
+
+
+
+
+
+
+
+# Edit output
+# create primary and alternate contigs for "-l2" by folding the file and writing as a fasta file
+rule EDIT_HIFIASM_OUTPUT:
+    input:
+        hifigfa1="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.p_ctg.gfa",
+        hifigfa2="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.a_ctg.gfa"
+    output:
+        fasta1="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.p_ctgl2.fasta",
+        fasta2="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.a_ctgl2.fasta"
+    shell: """
+        awk '/^S/{{print ">"$2"\n"$3}}' {input.hifigfa1} | fold > {output.fasta1} 
+        awk '/^S/{{print ">"$2"\n"$3}}' {input.hifigfa2} | fold > {output.fasta2}
+    """
+
+# 11) BUSCO Score
+
+# -m: genome mode
+# -i: input 
+# -o: output folder
+# -l: lineage/database - define it in config file
+
+rule RUN_BUSCO:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.p_ctgl2.fasta"
+    output:
+        prefix="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subreadfile}_",
+        short_json="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subreadfile}_short_summary.json",
+        short_txt="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subreadfile}_short_summary.txt",
+        full_table="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subreadfile}_full_table.tsv",
+        miss_list="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subreadfile}_busco_missing.tsv"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.busco.log"
+    params:
+        dataset_dir="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/{subreadfile}_busco_downloads",
+        out_dir="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/BUSCO/",
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        lineage=config["LINEAGE"]
+    shell: """
+        busco -m genome -c {threads} -i {input} --download_path {params.dataset_dir} --out_path {params.out_dir} -l {params.lineage} --offline 2> {log}
+    """
+
+
+
+# 12) Purge erroneous duplications with Purge_dups
+
+# split fasta file where Ns occur
+
+rule SPLIT_AT_Ns:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.p_ctgl2.fasta"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}_split.p_ctgl2.fasta"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.split_fa.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"]
+    shell: """
+        split_fa {input} > {output} 2> {log}
+    """
+
+# xasm5=asm-to-ref mapping, for ~0.1 sequence divergence (assembly to self)
+# -I=split index for every ~NUM input bases
+rule MINIMAP2_GENOME_TO_SELF:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}_split.p_ctgl2.fasta"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/MINIMAP2/{subreadfile}_split.p_ctgl2.genome.paf"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.minimap2a.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        i_split=config["INDEX_SPLIT"]
+    shell: """
+        minimap2 -I {params.i_split} -t {threads} -xasm5 -DP {input} {input} > {output} 2> {log}
+    """
+
+rule MINIMAP2_GENOME_TO_READS:
+    input:
+        splitf="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}_split.p_ctgl2.fasta",
+        ccs_reads="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{subreadfile}.ccs.fastq.gz"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/MINIMAP2/{subreadfile}_split.p_ctgl2.reads.paf"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.minimap2b.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        i_split=config["INDEX_SPLIT"]
+    shell: """
+        minimap2 -I {params.i_split} -t {threads} -x map-pb {input.splitf} {input.ccs_reads} > {output} 2> {log}
+    """
+
+
+#Calculate haploid/diploid coverage threshold and remove haplotype duplicates from assembly
+
+rule PBCSTAT:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/MINIMAP2/{subreadfile}_split.p_ctgl2.reads.paf"
+    output:
+        basecov="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}/PB.base.cov",
+        stat="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}/PB.stat"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.pbcstat.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        i_split=config["INDEX_SPLIT"],
+        prefix="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}"
+    shell: """
+        pbcstat -O {params.prefix} {input} 2> {log}
+    """
+
+rule CALCUTS:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}/PB.stat"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}/cutoffs"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.calcuts.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        i_split=config["INDEX_SPLIT"],
+        prefix="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}"
+    shell: """
+        calcuts {input} > {output} 2> {log}
+    """
+
+
+rule PURGE_DUPS:
+    input:
+        basecov="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}/PB.base.cov",
+        cutoffs="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}/cutoffs",
+        genome_paf="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/MINIMAP2/{subreadfile}_split.p_ctgl2.genome.paf"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}_dups.bed"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.purge_dups.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        i_split=config["INDEX_SPLIT"],
+        prefix="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}"
+    shell: """
+        purge_dups -2 -c {input.basecov} -T {input.cutoffs} {input.genome_paf} > {output} 2> {log}
+    """
+
+rule GET_SEQS:
+    input:
+        purge_duped="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}_dups.bed",
+        fasta="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/HIFIASM/{subreadfile}.p_ctgl2.fasta"
+    output:
+        "RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}_seqs.purged"
+    threads:
+        config["CORES"]
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/ASSEMBLY.{subreadfile}.get_seqs.log"
+    params:
+        loglevel=config["LOGLEVEL"],
+        chunk=config["CHUNKS"],
+        i_split=config["INDEX_SPLIT"],
+        prefix="RESULTS/GENOME_ASSEMBLY/ASSEMBLY/PURGE_DUPS/{subreadfile}_seqs.purged"
+    shell: """
+        get_seqs -e -p {params.prefix} {input.purge_duped} {input.fasta} 2> {log}
+    """
+
+
