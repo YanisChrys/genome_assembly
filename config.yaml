@@ -29,12 +29,3 @@ DO_DEDUP: False
 
 # a convenient way to only run hifiasm. Pretty niche, might remove or redesign in the future depending on what's added to the pipeline
 STOP_AT_HIFIASM: False
-
-
-# you can turn off:
-# BUSCO, HIC, FASTK steps
-
-# if error add zip after string?
-# INPUT_SUBREADS = f"{SUBREADS_PATH}""/{subreadfile}.subreads.bam" 
-# INPUT_HIFI = f"{HIFI_READS_PATH}""/{hififile}.vcf.gz" 
-
