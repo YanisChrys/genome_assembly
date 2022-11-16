@@ -10,29 +10,31 @@
 CHUNKS: 5
 CORES: 10
 
-# log level for ccs
-# database to use for BUSCO
-#TRACE, DEBUG, INFO, WARN, FATAL
+# LOGLEVEL: log level for ccs, values: #TRACE, DEBUG, INFO, WARN, FATAL
+# LINEAGE: database to use for BUSCO
+# KMER: kmer size for fastk
+# INDEX_SPLIT:
 LOGLEVEL: INFO
 LINEAGE: cyprinodontiformes_odb10
 KMER: 40
 INDEX_SPLIT: 200G
 
 # if using HIFI copy it to the working directory
-# enter prefix for output names, all non characters will be removed
-#specify multiuple enzymes with comma without space -- need the sequence not the name
+# ENZYMES: specify multiuple enzymes with comma without space -- need the sequence not the name
+# FILE_PREFIX: prefix for output names, all non characters will be removed
 SUBREADS: ''
 HIFI: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/m54345U_220213_143410.deepconsensusFiltered.fq.gz
 HIC1: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/fPhoPho_R001_S001_R1.fastq.gz
 HIC2: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/fPhoPho_R001_S001_R2.fastq.gz
 ENZYMES: 'GATC,GANTC,CTNAG,TTAA'
 FILE_PREFIX: phophogenome143410
-# specify if you want to run busco on the assembly
+
+# Specify which operations to run, accepted values: True, False
 DO_BUSCO: False
 DO_HIC: False
 DO_FASTK: True
 DO_CCS: False
 DO_DEDUP: False
 
-# a convenient way to only run hifiasm. Pretty niche, might remove or redesign in the future depending on what's added to the pipeline
+# a convenient way to only run hifiasm. Niche -- might remove or redesign in the future depending on what's added to the pipeline
 STOP_AT_HIFIASM: False
