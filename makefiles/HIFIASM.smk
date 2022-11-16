@@ -95,5 +95,6 @@ rule RUN_BUSCO:
         -o {params.run_name}
         --download_path {params.dataset_dir} \
         --out_path {params.out_dir} \
-        -l {params.lineage}
+        -l {params.lineage} \
+        --offline
     """
