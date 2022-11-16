@@ -200,7 +200,7 @@ rule RUN_BUSCO_AGAIN:
         # full_table="RESULTS/BUSCO/{prefix}_full_table.tsv",
         # touch("RESULTS/BUSCO/{prefix}_busco_missing.tsv")
         # directory("RESULTS/BUSCO_SCAFFOLDED/{prefix}/")
-        expand("RESULTS/BUSCO_SCAFFOLDED/{prefix}/run_{lineage}/missing_busco_list.tsv", prefix=FILE_PREFIX,lineage=LINEAGE)
+        expand("RESULTS/BUSCO_SCAFFOLDED/{prefix}/run_{lineage}/missing_busco_list.tsv", prefix=FILE_PREFIX,lineage=config["LINEAGE"])
     threads:
         workflow.cores
     log:
