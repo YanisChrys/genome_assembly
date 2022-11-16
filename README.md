@@ -57,7 +57,7 @@ snakemake -s PATH/TO/SMKFILE/snakemake_hic --dag --forceall | dot -Tpdf > graph_
 ```
 ## BUSCO:
 
-For BUSCO, it is preferable to use it `offline`. To do that, download the desired dataset from [here](https://busco-data.ezlab.org/v5/data/lineages/ere), unpack and place in folder with:
+For BUSCO, it is preferable to use it `offline`. To do that, download the desired dataset from [here](https://busco-data.ezlab.org/v5/data/lineages/), unpack and place in folder with:
 ```
 curl -O <link>
 tar -xf <file> # becomes <folder>
