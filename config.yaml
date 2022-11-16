@@ -13,7 +13,7 @@ CORES: 10
 # LOGLEVEL: log level for ccs, values: #TRACE, DEBUG, INFO, WARN, FATAL
 # LINEAGE: database to use for BUSCO
 # KMER: kmer size for fastk
-# INDEX_SPLIT:
+# INDEX_SPLIT: "split index for every ~NUM input bases" relevant for minimap2. Defuult = 4G
 LOGLEVEL: INFO
 LINEAGE: cyprinodontiformes_odb10
 KMER: 40
