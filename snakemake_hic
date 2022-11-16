@@ -93,7 +93,8 @@ if DO_HIC:
     hicfiles=expand("DATA/{hic}.fastq.gz",hic=["hic1","hic2"])
     combined1=expand("RESULTS/HIC/RAW/{prefix}_{hic}.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX)
     filt1=expand("RESULTS/HIC/FILTERED/{prefix}_{hic}_filtered.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX)
-    OUTPUT_FILES=OUTPUT_FILES + hicresorted1 + hicfiles + combined1 + filt1
+    busco_scaff=expand("RESULTS/BUSCO_SCAFFOLDED/{prefix}/run_{db}/missing_busco_list.tsv", prefix=FILE_PREFIX,db=config["LINEAGE"])
+    OUTPUT_FILES=OUTPUT_FILES + hicresorted1 + hicfiles + combined1 + filt1 + busco_scaff
 if DO_DEDUP:
     getseqs1=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + getseqs1
