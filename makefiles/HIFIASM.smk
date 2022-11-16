@@ -39,7 +39,6 @@ rule RUN_HIFIASM:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.hifiasm.log"
     params:
         prefix="RESULTS/GENOME_ASSEMBLY/HIFIASM/{prefix}",
-        loglevel=config["LOGLEVEL"],
         chunk=config["CHUNKS"]
     envmodules:
         "hifiasm/0.16.1"

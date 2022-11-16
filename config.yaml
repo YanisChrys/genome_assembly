@@ -1,10 +1,17 @@
-# partition parts of each job
+# configuration file for workflow.
+# this is deisgned to be the user's point of contact with the workflow, any adjustments or inputs are intended to be placed here.
+# this should allow users to not have to become familiar with the entire workflow to use it.
+
+
+# partition parts of ccs to parallelize and run faster
+# CORES: number of threads PER chunk of ccs partition. To change the number of cores used by the workflow specify them when submitting the jobscript
 # number of threads to use
-# log level
-# database to use for BUSCO
+
 CHUNKS: 5
 CORES: 10
 
+# log level for ccs
+# database to use for BUSCO
 #TRACE, DEBUG, INFO, WARN, FATAL
 LOGLEVEL: INFO
 LINEAGE: cyprinodontiformes_odb10

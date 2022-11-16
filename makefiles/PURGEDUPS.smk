@@ -11,9 +11,6 @@ rule SPLIT_AT_Ns:
         workflow.cores
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.split_fa.log"
-    params:
-        loglevel=config["LOGLEVEL"],
-        chunk=config["CHUNKS"]
     shell: """
         split_fa {input} > {output}
     """
@@ -31,7 +28,6 @@ rule MINIMAP2_GENOME_TO_SELF:
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.minimap2a.log"
     params:
-        chunk=config["CHUNKS"],
         i_split=config["INDEX_SPLIT"]
     shell: """
         minimap2 -I {params.i_split} -t {threads} -xasm5 -DP {input} {input} > {output}
@@ -48,8 +44,6 @@ rule MINIMAP2_GENOME_TO_READS:
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.minimap2b.log"
     params:
-        loglevel=config["LOGLEVEL"],
-        chunk=config["CHUNKS"],
         i_split=config["INDEX_SPLIT"]
     shell: """
         minimap2 -I {params.i_split} -t {threads} -x map-pb {input.splitf} {input.ccs_reads} > {output}
@@ -68,9 +62,6 @@ rule PBCSTAT:
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.pbcstat.log"
     params:
-        loglevel=config["LOGLEVEL"],
-        chunk=config["CHUNKS"],
-        i_split=config["INDEX_SPLIT"],
         prefix="RESULTS/GENOME_ASSEMBLY/PURGE_DUPS/{prefix}"
     shell: """
         pbcstat -O {params.prefix} {input}
@@ -86,9 +77,6 @@ rule CALCUTS:
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.calcuts.log"
     params:
-        loglevel=config["LOGLEVEL"],
-        chunk=config["CHUNKS"],
-        i_split=config["INDEX_SPLIT"],
         prefix="RESULTS/GENOME_ASSEMBLY/PURGE_DUPS/{prefix}"
     shell: """
         calcuts {input} > {output}
@@ -105,11 +93,6 @@ rule PURGE_DUPS:
         workflow.cores
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.purge_dups.log"
-    params:
-        loglevel=config["LOGLEVEL"],
-        chunk=config["CHUNKS"],
-        i_split=config["INDEX_SPLIT"],
-        prefix="RESULTS/GENOME_ASSEMBLY/PURGE_DUPS/{prefix}"
     shell: """
         purge_dups -2 -c {input.basecov} -T {input.cutoffs} {input.genome_paf} > {output}
     """
@@ -125,9 +108,6 @@ rule GET_SEQS:
     log:
         "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.get_seqs.log"
     params:
-        loglevel=config["LOGLEVEL"],
-        chunk=config["CHUNKS"],
-        i_split=config["INDEX_SPLIT"],
         prefix="RESULTS/GENOME_ASSEMBLY/PURGE_DUPS/{prefix}_seqs_purged"
     shell: """
         get_seqs -e -p {params.prefix} {input.purge_duped} {input.fasta}

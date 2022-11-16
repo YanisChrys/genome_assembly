@@ -74,8 +74,7 @@ rule GENESCOPE_FK:
         "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.GeneScopeFK.log"
     params:
         inputprefix="{prefix}",
-        outfolder="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/genescopeFK",
-        loglevel=config["LOGLEVEL"],
+        outfolder="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/genescopeFK"
         chunk=config["CHUNKS"],
         kmersize=config["KMER"]
     shell: """
@@ -138,7 +137,6 @@ rule PLOIDYPLOT:
     params:
         inp=lambda wildcards, output: output[0][:-4],
         out="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/",
-        loglevel=config["LOGLEVEL"],
         chunk=config["CHUNKS"]
     envmodules:
         "merquryfk/current",
