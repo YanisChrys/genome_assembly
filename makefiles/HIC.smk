@@ -189,7 +189,7 @@ rule RUN_SALSA2:
     """
 
 
-rule RUN_BUSCO:
+rule RUN_BUSCO_AGAIN:
     input:
         "RESULTS/GENOME_ASSEMBLY/HIC/SALSA2/scaffolds_FINAL.fasta"
     output:
