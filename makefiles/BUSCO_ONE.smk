@@ -16,11 +16,11 @@ rule RUN_BUSCO:
         # full_table="RESULTS/BUSCO/{prefix}_full_table.tsv",
         # touch("RESULTS/BUSCO/{prefix}_busco_missing.tsv")
         # directory("RESULTS/BUSCO/{prefix}/")
-        expand("RESULTS/BUSCO/{prefix}/run_{lineage}/missing_busco_list.tsv", prefix=FILE_PREFIX,lineage=config["LINEAGE"])
+        "RESULTS/BUSCO/{prefix}/run_{db}/missing_busco_list.tsv"
     threads:
         workflow.cores
     log:
-        "RESULTS/LOG/{prefix}.busco.log"
+        "RESULTS/LOG/{prefix}_{db}.busco.log"
     params:
         dataset_dir="busco_downloads",
         out_dir="RESULTS/BUSCO/",

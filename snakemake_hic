@@ -85,7 +85,7 @@ if DO_FASTK:
     seqstats=expand("RESULTS/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + katgc1 + katgc2 + katgc3 + ploidyplot1 + genescope1 + seqstats
 if DO_BUSCO:
-    buscoout=expand("RESULTS/BUSCO/{prefix}/run_{lineage}/missing_busco_list.tsv", prefix=FILE_PREFIX,lineage=config["LINEAGE"])
+    buscoout=expand("RESULTS/BUSCO/{prefix}/run_{db}/missing_busco_list.tsv", prefix=FILE_PREFIX,db=config["LINEAGE"])
     OUTPUT_FILES=OUTPUT_FILES + buscoout
 # turn path string to list and add to output
 if DO_HIC:
