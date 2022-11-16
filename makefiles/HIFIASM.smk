@@ -77,7 +77,8 @@ rule RUN_BUSCO:
         # short_json="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_short_summary.json",
         # short_txt="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_short_summary.txt",
         # full_table="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_full_table.tsv",
-        touch("RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_busco_missing.tsv")
+        # touch("RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_busco_missing.tsv")
+        directory("RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}")
     threads:
         workflow.cores
     log:
