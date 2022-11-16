@@ -76,12 +76,12 @@ if STOP_AT_HIFIASM:
     hifiasm2=expand("RESULTS/GENOME_ASSEMBLY/HIFIASM/{prefix}.p_ctgl2.fasta", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + hifiasm1 + hifiasm2
 if DO_FASTK:
-    katgc1=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{prefix}.st.png", prefix=FILE_PREFIX)
-    katgc2=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{prefix}.fi.png", prefix=FILE_PREFIX)
-    katgc3=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{prefix}.ln.png", prefix=FILE_PREFIX)
-    ploidyplot1=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/{prefix}.pdf", prefix=FILE_PREFIX)
-    genescope1=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/FASTKMERS/genescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
-    seqstats=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/STATISTICS/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
+    katgc1=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.st.png", prefix=FILE_PREFIX)
+    katgc2=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.fi.png", prefix=FILE_PREFIX)
+    katgc3=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.ln.png", prefix=FILE_PREFIX)
+    ploidyplot1=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.pdf", prefix=FILE_PREFIX)
+    genescope1=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTKgenescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
+    seqstats=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + katgc1 + katgc2 + katgc3 + ploidyplot1 + genescope1 + seqstats
 if DO_BUSCO:
     buscoout=expand("RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_busco_missing.tsv", prefix=FILE_PREFIX)
