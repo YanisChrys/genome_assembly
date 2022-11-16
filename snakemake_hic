@@ -38,7 +38,7 @@ elif HIFI:
 
 ############  RULE ALL FILES ############
 
-# add output files to rule all input so that the rules containing them will be included in the workflow.
+# add output files to rule all input, so that the rules containing them will be included in the workflow.
 # create an empty list and append output file names to it that will then be used as the input of the "all" rule
 # if a pipeline rule is defined and its output isn't found on the all rule, it simply won't run
 
@@ -65,6 +65,7 @@ wildcard_constraints:
 
 OUTPUT_FILES = []
 
+# the goal here is to conditionally add files to the list of outputs so that they match the operations we wish to run
 if STOP_AT_HIFIASM:
     # make sure that if the user forgot to set all other routes to false that they don't run
     # then add the hifiasm output files to rule all, if we do other steps we wouldn't need these files in there

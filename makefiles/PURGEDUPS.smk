@@ -6,7 +6,7 @@ rule SPLIT_AT_Ns:
     input:
         "RESULTS/GENOME_ASSEMBLY/{prefix}_primary.fasta"
     output:
-        "RESULTS/GENOME_ASSEMBLY/{prefix}_primary_split.fasta"
+        temp("RESULTS/GENOME_ASSEMBLY/{prefix}_primary_split.fasta")
     threads:
         workflow.cores
     log:
@@ -22,7 +22,7 @@ rule MINIMAP2_GENOME_TO_SELF:
     input:
         "RESULTS/GENOME_ASSEMBLY/{prefix}_primary_split.fasta"
     output:
-        "RESULTS/MINIMAP2/{prefix}_primary_genome_split.paf"
+        temp("RESULTS/MINIMAP2/{prefix}_primary_genome_split.paf")
     threads:
         workflow.cores
     log:
@@ -38,7 +38,7 @@ rule MINIMAP2_GENOME_TO_READS:
         splitf="RESULTS/GENOME_ASSEMBLY/{prefix}_primary_split.fasta",
         ccs_reads="DATA/{prefix}.fastq.gz"
     output:
-        "RESULTS/MINIMAP2/{prefix}_primary.reads_split.paf"
+        temp("RESULTS/MINIMAP2/{prefix}_primary_reads_split.paf")
     threads:
         workflow.cores
     log:
@@ -53,7 +53,7 @@ rule MINIMAP2_GENOME_TO_READS:
 
 rule PBCSTAT:
     input:
-        "RESULTS/MINIMAP2/{prefix}_primary.reads_split.paf"
+        "RESULTS/MINIMAP2/{prefix}_primary_reads_split.paf"
     output:
         basecov="RESULTS/PURGE_DUPS/{prefix}/PB.base.cov",
         stat="RESULTS/PURGE_DUPS/{prefix}/PB.stat" #, PB.cov.wig
@@ -88,7 +88,7 @@ rule PURGE_DUPS:
         cutoffs="RESULTS/PURGE_DUPS/{prefix}/cutoffs",
         genome_paf="RESULTS/MINIMAP2/{prefix}_primary_genome_split.paf"
     output:
-        "RESULTS/PURGE_DUPS/{prefix}_dups.bed"
+        temp("RESULTS/PURGE_DUPS/{prefix}_dups.bed")
     threads:
         workflow.cores
     log:
@@ -102,7 +102,7 @@ rule GET_SEQS:
         purge_duped="RESULTS/PURGE_DUPS/{prefix}_dups.bed",
         fasta="RESULTS/GENOME_ASSEMBLY/{prefix}_primary.fasta"
     output:
-        "RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa"
+        temp("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa")
     threads:
         workflow.cores
     log:
@@ -117,7 +117,7 @@ rule INDEX_SEQS:
     input:
         "RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa"
     output:
-        "RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa.fai"
+        temp("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa.fai")
     shell: """
         samtools faidx {input}
     """

@@ -11,7 +11,7 @@ rule MAP_HIC_TO_ASSEMBLY:
         fasta=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa",prefix=FILE_PREFIX),
         hic1="DATA/{hic}.fastq.gz"
     output:
-        expand("RESULTS/HIC/RAW/{prefix}_{hic}.bam",prefix=FILE_PREFIX,allow_missing=True)
+        temp(expand("RESULTS/HIC/RAW/{prefix}_{hic}.bam",prefix=FILE_PREFIX,allow_missing=True))
     threads:
         workflow.cores
     log:
@@ -29,7 +29,7 @@ rule FILTER_5PRIME_ALIGNMENT:
     input:
         rawhic1=expand("RESULTS/HIC/RAW/{prefix}_{hic}.bam",prefix=FILE_PREFIX,allow_missing=True)
     output:
-        filtrawhic1=expand("RESULTS/HIC/FILTERED/{prefix}_{hic}_filtered.bam",prefix=FILE_PREFIX,allow_missing=True)
+        filtrawhic1=temp(expand("RESULTS/HIC/FILTERED/{prefix}_{hic}_filtered.bam",prefix=FILE_PREFIX,allow_missing=True))
     threads:
         workflow.cores
     log:
@@ -49,7 +49,7 @@ rule COMBINE_HICR1_AND_HICR2:
         hicfiles=expand("RESULTS/HIC/FILTERED/{prefix}_{hic}_filtered.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX),
         faidxfile=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa.fai",prefix=FILE_PREFIX)
     output:
-        "RESULTS/HIC/COMBINED/mapped_hic_reads.bam"
+        temp("RESULTS/HIC/COMBINED/mapped_hic_reads.bam")
     threads:
         workflow.cores
     log:
@@ -73,7 +73,7 @@ rule ADD_READ_GROUP:
     input:
         "RESULTS/HIC/COMBINED/mapped_hic_reads.bam"
     output:
-        "RESULTS/HIC/COMBINED/mapped_hic_reads_withRG.bam"
+        temp("RESULTS/HIC/COMBINED/mapped_hic_reads_withRG.bam")
     threads:
         workflow.cores
     log:
@@ -96,7 +96,7 @@ rule SORT_HIC:
     input:
         "RESULTS/HIC/COMBINED/mapped_hic_reads_withRG.bam"
     output:
-        sorted="RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_sorted.bam"
+        sorted=temp("RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_sorted.bam")
     threads:
         workflow.cores
     log:
@@ -114,7 +114,7 @@ rule REMOVE_DUPLICATE_MAPPINGS:
     input:
         sorted="RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_sorted.bam"
     output:
-        deduped="RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped.bam",
+        deduped=temp("RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped.bam"),
         metrics="RESULTS/HIC/COMBINED/DEDUPED/picard_hic_deduped_metrics.txt"
     threads:
         workflow.cores
@@ -151,7 +151,7 @@ rule BAM2BED_HIC:
     input:
         "RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped_resorted.bam"
     output:
-        "RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped_resorted.bed"
+        temp("RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped_resorted.bed")
     log:
         "RESULTS/LOG/HIC.bam2bed.log"
     params:
@@ -170,7 +170,7 @@ rule RUN_SALSA2:
         fai=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa.fai",prefix=FILE_PREFIX)
     output:
         agp="RESULTS/HIC/SALSA2/scaffolds_FINAL.agp",
-        fastout="RESULTS/HIC/SALSA2/scaffolds_FINAL.fasta"
+        fastout=protected("RESULTS/HIC/SALSA2/scaffolds_FINAL.fasta")
     threads:
         workflow.cores
     log:
