@@ -15,7 +15,8 @@ rule RUN_BUSCO:
         # short_txt="RESULTS/BUSCO/{prefix}_short_summary.txt",
         # full_table="RESULTS/BUSCO/{prefix}_full_table.tsv",
         # touch("RESULTS/BUSCO/{prefix}_busco_missing.tsv")
-        directory("RESULTS/BUSCO/{prefix}/")
+        # directory("RESULTS/BUSCO/{prefix}/")
+        expand("RESULTS/BUSCO/{prefix}/run_{lineage}/missing_busco_list.tsv", prefix=FILE_PREFIX,lineage=LINEAGE)
     threads:
         workflow.cores
     log:

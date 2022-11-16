@@ -81,11 +81,11 @@ if DO_FASTK:
     katgc2=expand("RESULTS/STATISTICS/FASTK/{prefix}.fi.png", prefix=FILE_PREFIX)
     katgc3=expand("RESULTS/STATISTICS/FASTK/{prefix}.ln.png", prefix=FILE_PREFIX)
     ploidyplot1=expand("RESULTS/STATISTICS/FASTK/{prefix}.pdf", prefix=FILE_PREFIX)
-    genescope1=expand("RESULTS/STATISTICS/FASTKgenescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
+    genescope1=expand("RESULTS/STATISTICS/FASTK/genescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
     seqstats=expand("RESULTS/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + katgc1 + katgc2 + katgc3 + ploidyplot1 + genescope1 + seqstats
 if DO_BUSCO:
-    buscoout=expand("RESULTS/BUSCO/{prefix}_busco_missing.tsv", prefix=FILE_PREFIX)
+    buscoout=expand("RESULTS/BUSCO/{prefix}/run_{lineage}/missing_busco_list.tsv", prefix=FILE_PREFIX,lineage=LINEAGE)
     OUTPUT_FILES=OUTPUT_FILES + buscoout
 # turn path string to list and add to output
 if DO_HIC:
