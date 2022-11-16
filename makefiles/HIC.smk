@@ -187,3 +187,35 @@ rule RUN_SALSA2:
         --enzyme {params.enzymes} --bed {input.hic_bed} --output {params.dir} \
         --clean yes --prnt yes --iter 50
     """
+
+
+rule RUN_BUSCO:
+    input:
+        "RESULTS/GENOME_ASSEMBLY/HIC/SALSA2/scaffolds_FINAL.fasta"
+    output:
+        # prefix="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_",
+        # short_json="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_short_summary.json",
+        # short_txt="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_short_summary.txt",
+        # full_table="RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_full_table.tsv",
+        # touch("RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_busco_missing.tsv")
+        directory("RESULTS/GENOME_ASSEMBLY/BUSCO_SCAFFOLDED/{prefix}/")
+    threads:
+        workflow.cores
+    log:
+        "RESULTS/GENOME_ASSEMBLY/LOG/{prefix}.busco.scaf.log"
+    params:
+        dataset_dir="busco_downloads",
+        out_dir="RESULTS/GENOME_ASSEMBLY/BUSCO_SCAFFOLDED/",
+        run_name=FILE_PREFIX,
+        chunk=config["CHUNKS"],
+        lineage=config["LINEAGE"]
+    shell: """
+        busco -m genome \
+        -c {threads} \
+        -i {input} \
+        -o {params.run_name}
+        --download_path {params.dataset_dir} \
+        --out_path {params.out_dir} \
+        -l {params.lineage} \
+        --offline
+    """
