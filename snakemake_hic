@@ -72,34 +72,34 @@ if STOP_AT_HIFIASM:
     DO_BUSCO = False
     DO_HIC = False
     DO_DEDUP = False
-    hifiasm1=expand("RESULTS/GENOME_ASSEMBLY/HIFIASM/{prefix}.a_ctgl2.fasta", prefix=FILE_PREFIX)
-    hifiasm2=expand("RESULTS/GENOME_ASSEMBLY/HIFIASM/{prefix}.p_ctgl2.fasta", prefix=FILE_PREFIX)
+    hifiasm1=expand("RESULTS/GENOME_ASSEMBLY/{prefix}_alternate.fasta", prefix=FILE_PREFIX)
+    hifiasm2=expand("RESULTS/GENOME_ASSEMBLY/{prefix}_primary.fasta", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + hifiasm1 + hifiasm2
 if DO_FASTK:
-    katgc1=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.st.png", prefix=FILE_PREFIX)
-    katgc2=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.fi.png", prefix=FILE_PREFIX)
-    katgc3=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.ln.png", prefix=FILE_PREFIX)
-    ploidyplot1=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK{prefix}.pdf", prefix=FILE_PREFIX)
-    genescope1=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTKgenescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
-    seqstats=expand("RESULTS/GENOME_ASSEMBLY/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
+    katgc1=expand("RESULTS/STATISTICS/FASTK{prefix}.st.png", prefix=FILE_PREFIX)
+    katgc2=expand("RESULTS/STATISTICS/FASTK{prefix}.fi.png", prefix=FILE_PREFIX)
+    katgc3=expand("RESULTS/STATISTICS/FASTK{prefix}.ln.png", prefix=FILE_PREFIX)
+    ploidyplot1=expand("RESULTS/STATISTICS/FASTK{prefix}.pdf", prefix=FILE_PREFIX)
+    genescope1=expand("RESULTS/STATISTICS/FASTKgenescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
+    seqstats=expand("RESULTS/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + katgc1 + katgc2 + katgc3 + ploidyplot1 + genescope1 + seqstats
 if DO_BUSCO:
-    buscoout=expand("RESULTS/GENOME_ASSEMBLY/BUSCO/{prefix}_busco_missing.tsv", prefix=FILE_PREFIX)
+    buscoout=expand("RESULTS/BUSCO/{prefix}_busco_missing.tsv", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + buscoout
 # turn path string to list and add to output
 if DO_HIC:
-    hicresorted1=["RESULTS/GENOME_ASSEMBLY/HIC/SALSA2/scaffolds_FINAL.fasta","RESULTS/GENOME_ASSEMBLY/HIC/SALSA2/scaffolds_FINAL.agp"]
+    hicresorted1=["RESULTS/HIC/SALSA2/scaffolds_FINAL.fasta","RESULTS/HIC/SALSA2/scaffolds_FINAL.agp"]
     hicfiles=expand("DATA/{hic}.fastq.gz",hic=["hic1","hic2"])
-    combined1=expand("RESULTS/GENOME_ASSEMBLY/HIC/RAW/{prefix}_{hic}.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX)
-    filt1=expand("RESULTS/GENOME_ASSEMBLY/HIC/FILTERED/{prefix}_{hic}_filtered.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX)
+    combined1=expand("RESULTS/HIC/RAW/{prefix}_{hic}.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX)
+    filt1=expand("RESULTS/HIC/FILTERED/{prefix}_{hic}_filtered.bam",hic=["hic1","hic2"],prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + hicresorted1 + hicfiles + combined1 + filt1
 if DO_DEDUP:
-    getseqs1=expand("RESULTS/GENOME_ASSEMBLY/PURGE_DUPS/{prefix}_seqs_purged.hap.fa", prefix=FILE_PREFIX)
+    getseqs1=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + getseqs1
 if DO_CCS:
-    checkfinished="RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/MERGED/check.txt"
+    checkfinished="RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/check.txt"
     ccsreads=expand("DATA/{prefix}.subreads.bam",prefix=FILE_PREFIX)
-    ccsout=expand("RESULTS/GENOME_ASSEMBLY/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.bam",chunknumber=CHUNK_NMB, prefix=FILE_PREFIX)
+    ccsout=expand("RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.bam",chunknumber=CHUNK_NMB, prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + [checkfinished] + ccsout + ccsreads
 elif not DO_CCS:
     hifireads1=expand("DATA/{prefix}.fastq.gz",prefix=FILE_PREFIX)
@@ -152,5 +152,6 @@ rule CP_HIC2_TO_SYSTEM:
 include: "makefiles/CCS.smk"
 include: "makefiles/FASTK.smk"
 include: "makefiles/HIFIASM.smk"
+include: "makefiles/BUSCO_ONE.smk"
 include: "makefiles/PURGEDUPS.smk"
 include: "makefiles/HIC.smk"

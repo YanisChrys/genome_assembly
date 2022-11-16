@@ -8,9 +8,9 @@ rule SEQKIT_CCS_STATS:
     input:
         "DATA/{prefix}.fastq.gz"
     output:
-        "RESULTS/GENOME_ASSEMBLY/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt"
+        "RESULTS/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt"
     log:
-        "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.seqkit.log"
+        "RESULTS/LOG/STATISTICS.FASTK.{prefix}.seqkit.log"
     shell: """
         seqkit stats -a {input} > {output}
     """
@@ -24,15 +24,15 @@ rule FASTK_TABLE:
     input:
         "DATA/{prefix}.fastq.gz"
     output:
-        ktab=touch("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.ktab"),
-        hist=touch("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.hist")
+        ktab=touch("RESULTS/STATISTICS/FASTK/{prefix}.ktab"),
+        hist=touch("RESULTS/STATISTICS/FASTK/{prefix}.hist")
     threads:
         workflow.cores
     log:
-        "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.fastk.log"
+        "RESULTS/LOG/STATISTICS.FASTK.{prefix}.fastk.log"
     params:
-        out="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}",
-        temp="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/tmp",
+        out="RESULTS/STATISTICS/FASTK/{prefix}",
+        temp="RESULTS/STATISTICS/FASTK/tmp",
         chunk=config["CHUNKS"]
     # envmodules:
     #     "fastk/current"
@@ -48,11 +48,11 @@ rule FASTK_TABLE:
 # NOTE: consider exploring alterantive h values
 rule HISTEX:
     input:
-        "RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.hist"
+        "RESULTS/STATISTICS/FASTK/{prefix}.hist"
     output:
-        "RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.hist.txt"
+        "RESULTS/STATISTICS/FASTK/{prefix}.hist.txt"
     log:
-        "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.histex.log"
+        "RESULTS/LOG/STATISTICS.FASTK.{prefix}.histex.log"
     # envmodules:
     #     "fastk/current"
     shell: """
@@ -65,16 +65,16 @@ rule HISTEX:
 # it will fail if there isn't enough data
 rule GENESCOPE_FK:
     input:
-        "RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.hist.txt"
+        "RESULTS/STATISTICS/FASTK/{prefix}.hist.txt"
     output:
-        progress=touch("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/genescopeFK/{prefix}_progress.txt")
+        progress=touch("RESULTS/STATISTICS/FASTK/genescopeFK/{prefix}_progress.txt")
     threads:
         workflow.cores
     log:
-        "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.GeneScopeFK.log"
+        "RESULTS/LOG/STATISTICS.FASTK.{prefix}.GeneScopeFK.log"
     params:
         inputprefix="{prefix}",
-        outfolder="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/genescopeFK"
+        outfolder="RESULTS/STATISTICS/FASTK/genescopeFK"
         chunk=config["CHUNKS"],
         kmersize=config["KMER"]
     shell: """
@@ -94,16 +94,16 @@ rule GENESCOPE_FK:
 # needs to move to directory where it will find the files
 rule KATGC:
     input:
-        hist="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.hist",
-        ktab="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.ktab"
+        hist="RESULTS/STATISTICS/FASTK/{prefix}.hist",
+        ktab="RESULTS/STATISTICS/FASTK/{prefix}.ktab"
     output:
-        png1="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.st.png",
-        png2="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.fi.png",
-        png3="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.ln.png"
+        png1="RESULTS/STATISTICS/FASTK/{prefix}.st.png",
+        png2="RESULTS/STATISTICS/FASTK/{prefix}.fi.png",
+        png3="RESULTS/STATISTICS/FASTK/{prefix}.ln.png"
     threads:
         workflow.cores
     log:
-        "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.KatGC.log"
+        "RESULTS/LOG/STATISTICS.FASTK.{prefix}.KatGC.log"
     envmodules:
         "merquryfk/current",
         "fastk/current"
@@ -114,7 +114,7 @@ rule KATGC:
         # module load fastk/current
         # source /share/scientific_bin/anaconda3/2022.05/etc/profile.d/conda.sh
         # conda activate merqury
-        cd RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/
+        cd RESULTS/STATISTICS/FASTK/
         KatGC -T{threads} {wildcards.prefix} {wildcards.prefix}
     """
 
@@ -126,17 +126,17 @@ rule KATGC:
 # Needs program Logex
 rule PLOIDYPLOT:
     input:
-        hist="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.hist",
-        ktab="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.ktab"
+        hist="RESULTS/STATISTICS/FASTK/{prefix}.hist",
+        ktab="RESULTS/STATISTICS/FASTK/{prefix}.ktab"
     output:
-        touch("RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/{prefix}.pdf")
+        touch("RESULTS/STATISTICS/FASTK/{prefix}.pdf")
     threads:
         workflow.cores
     log:
-        "RESULTS/GENOME_ASSEMBLY/LOG/STATISTICS.FASTK.{prefix}.PloidyPlot.log"
+        "RESULTS/LOG/STATISTICS.FASTK.{prefix}.PloidyPlot.log"
     params:
         inp=lambda wildcards, output: output[0][:-4],
-        out="RESULTS/GENOME_ASSEMBLY/STATISTICS/FASTK/",
+        out="RESULTS/STATISTICS/FASTK/",
         chunk=config["CHUNKS"]
     envmodules:
         "merquryfk/current",
