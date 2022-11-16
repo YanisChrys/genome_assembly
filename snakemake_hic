@@ -77,10 +77,10 @@ if STOP_AT_HIFIASM:
     hifiasm2=expand("RESULTS/GENOME_ASSEMBLY/{prefix}_primary.fasta", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + hifiasm1 + hifiasm2
 if DO_FASTK:
-    katgc1=expand("RESULTS/STATISTICS/FASTK{prefix}.st.png", prefix=FILE_PREFIX)
-    katgc2=expand("RESULTS/STATISTICS/FASTK{prefix}.fi.png", prefix=FILE_PREFIX)
-    katgc3=expand("RESULTS/STATISTICS/FASTK{prefix}.ln.png", prefix=FILE_PREFIX)
-    ploidyplot1=expand("RESULTS/STATISTICS/FASTK{prefix}.pdf", prefix=FILE_PREFIX)
+    katgc1=expand("RESULTS/STATISTICS/FASTK/{prefix}.st.png", prefix=FILE_PREFIX)
+    katgc2=expand("RESULTS/STATISTICS/FASTK/{prefix}.fi.png", prefix=FILE_PREFIX)
+    katgc3=expand("RESULTS/STATISTICS/FASTK/{prefix}.ln.png", prefix=FILE_PREFIX)
+    ploidyplot1=expand("RESULTS/STATISTICS/FASTK/{prefix}.pdf", prefix=FILE_PREFIX)
     genescope1=expand("RESULTS/STATISTICS/FASTKgenescopeFK/{prefix}_progress.txt", prefix=FILE_PREFIX)
     seqstats=expand("RESULTS/STATISTICS/SEQKIT/{prefix}.ccs.readStats.txt", prefix=FILE_PREFIX)
     OUTPUT_FILES=OUTPUT_FILES + katgc1 + katgc2 + katgc3 + ploidyplot1 + genescope1 + seqstats

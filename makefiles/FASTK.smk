@@ -74,8 +74,7 @@ rule GENESCOPE_FK:
         "RESULTS/LOG/STATISTICS.FASTK.{prefix}.GeneScopeFK.log"
     params:
         inputprefix="{prefix}",
-        outfolder="RESULTS/STATISTICS/FASTK/genescopeFK"
-        chunk=config["CHUNKS"],
+        outfolder="RESULTS/STATISTICS/FASTK/genescopeFK",
         kmersize=config["KMER"]
     shell: """
         module load genescopefk/current
