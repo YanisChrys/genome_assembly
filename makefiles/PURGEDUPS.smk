@@ -38,7 +38,7 @@ rule MINIMAP2_GENOME_TO_READS:
         splitf="RESULTS/GENOME_ASSEMBLY/{prefix}_primary_split.fasta",
         ccs_reads="DATA/{prefix}.fastq.gz"
     output:
-        "RESULTS/MINIMAP2/{prefix}.p_ctgl2.reads_split.paf"
+        "RESULTS/MINIMAP2/{prefix}_primary.reads_split.paf"
     threads:
         workflow.cores
     log:
@@ -53,7 +53,7 @@ rule MINIMAP2_GENOME_TO_READS:
 
 rule PBCSTAT:
     input:
-        "RESULTS/MINIMAP2/{prefix}.p_ctgl2.reads_split.paf"
+        "RESULTS/MINIMAP2/{prefix}_primary.reads_split.paf"
     output:
         basecov="RESULTS/PURGE_DUPS/{prefix}/PB.base.cov",
         stat="RESULTS/PURGE_DUPS/{prefix}/PB.stat" #, PB.cov.wig

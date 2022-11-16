@@ -106,7 +106,7 @@ elif not DO_CCS:
     OUTPUT_FILES=OUTPUT_FILES + hifireads1
 ############  RULE ALL  ############
 
-#BRIDGE=['a_ctg','p_ctg','p_ctg','r_utg']
+# BRIDGE = ['a_ctg','p_ctg','p_ctg','r_utg']
 
 # Terminal node:
 rule all:
