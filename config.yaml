@@ -19,7 +19,8 @@ LINEAGE: cyprinodontiformes_odb10
 KMER: 40
 INDEX_SPLIT: 200G
 
-# if using HIFI copy it to the working directory
+# if using subreads, this pipeline takes a single, pbindexed subread file
+# if using HIFI it will get copied to the working directory
 # ENZYMES: specify multiuple enzymes with comma without space -- need the sequence not the name
 # FILE_PREFIX: prefix for output names, all non characters will be removed
 SUBREADS: ''

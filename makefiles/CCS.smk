@@ -4,8 +4,9 @@
 # run ccs to create circular hifi reads
 
 # use pacbio subreads to create hifireads
-# break up the reads into several piecies and
+# break up the reads into several pieces and
 # run ccs in multiple parallel chunks to speed up the process
+# afterwards, use deepconsensus to correct errors
 rule RUN_CCS:
     input:
         "DATA/{prefix}.subreads.bam"
@@ -18,48 +19,58 @@ rule RUN_CCS:
         config["CORES"]
     params:
         loglevel=config["LOGLEVEL"],
-        chunk="{chunknumber}/%s" % config["CHUNKS"],
-    log:
-        "RESULTS/LOG/PREPROCESSING.CCS_PACBIO.{prefix}_{chunknumber}.ccs.log"
+        chunk="{chunknumber}/%s" % config["CHUNKS"]
     shell: """
-        ccs {input} {output.bamo} --num-threads {threads} --chunk {params.chunk} \
+        ccs {input} {output.bamo} --min-rq=0.88 --num-threads {threads} --chunk {params.chunk} \
         --log-level {params.loglevel} --log-file {log} --report-file {output.rprt} --metrics-json {output.metrics}
     """
 
-rule MERGE_CCS:
+
+rule ACTC:
     input:
-        expand("RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.bam",chunknumber=CHUNK_NMB, prefix=FILE_PREFIX)
+        ori_subs="DATA/{prefix}.subreads.bam"
+        ccs_subs="RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.bam"
     output:
-        touch("RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.bam")
+        touch("RESULTS/PREPROCESSING/CCS_PACBIO/ACTC/{prefix}_{chunknumber}.subreads_to_ccs_actc.bam")
     threads:
         workflow.cores
-    log:
-        "RESULTS/LOG/PREPROCESSING.CCS_PACBIO.{prefix}.merge.log"
     shell: """
-        samtools merge -c -p -f -@{threads} {output} {input}
+        actc -j {threads}  \
+        {input.orisubs} \
+        {input.ccs_subs} \
+        {output}
     """
 
-rule INDEX_MERGED_CCS:
+rule DEEPCONSENSUS:
     input:
-        "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.bam"
+        actc_subs="RESULTS/PREPROCESSING/CCS_PACBIO/ACTC/{prefix}_{chunknumber}.subreads_to_ccs_actc.bam",
+        ccs_subs="RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.bam"
     output:
-        touch("RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.bam.pbi")
-    log:
-        "RESULTS/LOG/PREPROCESSING.CCS_PACBIO.{prefix}.pbindex.log"
+        "RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.fastq"
+    envmodules:
+        "deepconsensus/0.3.1"
     shell: """
-        pbindex {input}
+        deepconsensus run \
+        --subreads_to_ccs={input.actc_subs}  \
+        --ccs_bam={input.ccs_subs} \
+        --checkpoint=model/checkpoint \
+        --output={output}
     """
 
-rule CONVERT_TO_FASTQ:
+rule MERGE_FQ:
     input:
-        bam="RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.bam",
-        pbi="RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.bam.pbi"
+        expand("RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.fastq",chunknumber=CHUNK_NMB, prefix=FILE_PREFIX)
+    output:
+        "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.fastq"
+    shell: """
+        cat {input} > output
+    """
+
+rule COMPRESS_FQ:
+    input:
+        "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/{prefix}.merged.ccs.fastq"
     output:
         "DATA/{prefix}.fastq.gz"
-    params:
-        "DATA/{prefix}"
-    log:
-        "RESULTS/LOG/PREPROCESSING/CCS_PACBIO/{prefix}.bam2fastq.log"
     shell: """
-        bam2fastq -o {params} {input.bam}
+        gzip -c {input} > {output}
     """

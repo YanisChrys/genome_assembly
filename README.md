@@ -8,7 +8,7 @@ conda create --name genome_assembly
 conda activate genome_assembly
 conda config --add channels conda-forge
 conda config --add channels bioconda  
-conda install -y purge_dups pbmm2 pbccs pbgcpp bedtools r-essentials r-argparse r-ggplot2 picard r-scales r-viridis samtools snakemake bcftools seqkit freebayes python=2.7 hifiasm bam2fastx bwa pairtools pairix r-base r-minpack.lm busco merqury openjdk=11
+conda install -y purge_dups pbmm2 pbccs pbgcpp bedtools r-essentials r-argparse r-ggplot2 picard r-scales r-viridis samtools snakemake bcftools seqkit freebayes python=2.7 actc hifiasm bam2fastx bwa pairtools pairix r-base r-minpack.lm busco merqury openjdk=11
 ```
 
 The following packages need to be set up separately by following the instructions on the github page or by installing them in whatever way is appropriate for your system:

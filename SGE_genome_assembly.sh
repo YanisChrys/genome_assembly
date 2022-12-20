@@ -24,6 +24,7 @@ snakemake \
     --verbose \
     --printshellcmds \
     --reason \
+    --resources mem_mb=1000 \
     --nolock 
     
     #--rerun-triggers mtime
