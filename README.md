@@ -91,3 +91,5 @@ m54345U_220213_143410.deepconsensusFiltered.fq.gz
 fPhoPho.hap1.20220427.fa.gz  
 fPhoPho.hap2.20220427.fa.gz  
 
+### pacbio adapters
+Pacbio adapters can be found and saved with script [] and must be renamed to `pacbio_vectors_db` and placed inside the folder `DATA/HiFiAdapterFilt/DB/pacbio_vectors_db`

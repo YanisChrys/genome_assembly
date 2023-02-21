@@ -162,7 +162,8 @@ rule BAM2BED_HIC:
 
 ############ SCAFFOLDING ############
 
-# Run salsa2 scaffolding
+############ SALSA2 ############
+
 rule RUN_SALSA2:
     input:
         hic_bed="RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped_resorted.bed",
@@ -187,6 +188,34 @@ rule RUN_SALSA2:
         python2 /share/scientific_bin/salsa2/2.3/bin/run_pipeline.py --assembly {input.fasta} --length {input.fai} \
         --enzyme {params.enzymes} --bed {input.hic_bed} --output {params.dir} \
         --clean yes --prnt yes --iter 50
+    """
+
+
+############ YAHS ############
+
+# input: contig assembly indexed fasta +  BAM/BED/BIN file with the alignment results of Hi-C reads to the contigs
+# -l:  minimum contig length included for scaffolding.
+# -q: minimum read mapping quality 
+
+rule YAHS:
+    input:
+        hic_bed="RESULTS/HIC/COMBINED/DEDUPED/mapped_hic_reads_withRG_deduped_resorted.bed",
+        fasta=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa",prefix=FILE_PREFIX),
+        fai=expand("RESULTS/PURGE_DUPS/{prefix}_seqs_purged.hap.fa.fai",prefix=FILE_PREFIX)
+    output:
+        "RESULTS/HIC/YAHS/{prefix}_yahs_scaffolds_final.fa"
+    threads:
+        workflow.cores
+    log:
+        "RESULTS/LOG/HIC.yahs.log"
+    params:
+        chunk=config["CHUNKS"],
+        enzymes=config["ENZYMES"],
+        dir="RESULTS/HIC/YAHS/{prefix}_yahs"
+    conda:
+        "envs/yahs.yaml"
+    shell: """
+        yahs {input.fasta} {input.hic_bed} -o {params.dir} -e {params.enzymes}
     """
 
 
@@ -221,3 +250,7 @@ rule RUN_BUSCO_AGAIN:
         -l {params.lineage} \
         --offline
     """
+
+
+# next steps:
+# https://github.com/c-zhou/yahs#generate-hic-contact-maps

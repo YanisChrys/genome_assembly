@@ -25,6 +25,7 @@ snakemake \
     --printshellcmds \
     --reason \
     --resources mem_mb=1000 \
+    --default-respources "tmpdir='./tmp'" \
     --nolock 
     
     #--rerun-triggers mtime

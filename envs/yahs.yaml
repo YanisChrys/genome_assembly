@@ -1,0 +1,6 @@
+name: yahs
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - yahs

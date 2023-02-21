@@ -1,6 +1,21 @@
 ############  PRIMARY PREPROCESSING MODULE  ############
 ############  IF READS ARE NOT CIRCULAR  ############
 
+# Remove reads with adapter sequences ("adapter contamination")
+# from subreads
+
+
+rule FILTER_ADAPTERS:
+    input:
+        "DATA/{prefix}.subreads.bam"
+    output:
+        "DATA/{prefix}.subreads_adapt_filt.bam"
+    conda:
+        "envs/HiFiAdapterFilt.yaml"
+    shell: """
+        bash ./utils/pbadapterfilt.sh 
+    """
+
 # run ccs to create circular hifi reads
 
 # use pacbio subreads to create hifireads
@@ -21,14 +36,15 @@ rule RUN_CCS:
         loglevel=config["LOGLEVEL"],
         chunk="{chunknumber}/%s" % config["CHUNKS"]
     shell: """
-        ccs {input} {output.bamo} --min-rq=0.88 --num-threads {threads} --chunk {params.chunk} \
+        ccs {input} {output.bamo} \
+        --min-rq=0.88 --num-threads {threads} --chunk {params.chunk} \
         --log-level {params.loglevel} --log-file {log} --report-file {output.rprt} --metrics-json {output.metrics}
     """
 
 
 rule ACTC:
     input:
-        ori_subs="DATA/{prefix}.subreads.bam"
+        ori_subs="DATA/{prefix}.subreads.bam",
         ccs_subs="RESULTS/PREPROCESSING/CCS_PACBIO/{prefix}_{chunknumber}.ccs.bam"
     output:
         touch("RESULTS/PREPROCESSING/CCS_PACBIO/ACTC/{prefix}_{chunknumber}.subreads_to_ccs_actc.bam")
@@ -36,7 +52,7 @@ rule ACTC:
         workflow.cores
     shell: """
         actc -j {threads}  \
-        {input.orisubs} \
+        {input.ori_subs} \
         {input.ccs_subs} \
         {output}
     """
