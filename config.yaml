@@ -16,26 +16,64 @@ CORES: 10
 # INDEX_SPLIT: "split index for every ~NUM input bases" relevant for minimap2. Defuult = 4G
 LOGLEVEL: INFO
 LINEAGE: cyprinodontiformes_odb10
-KMER: 40
+KMER: 30
 INDEX_SPLIT: 200G
 
-# if using subreads, this pipeline takes a single, pbindexed subread file
-# if using HIFI it will get copied to the working directory
+# if using HIFI copy it to the working directory
 # ENZYMES: specify multiuple enzymes with comma without space -- need the sequence not the name
 # FILE_PREFIX: prefix for output names, all non characters will be removed
-SUBREADS: ''
-HIFI: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/m54345U_220213_143410.deepconsensusFiltered.fq.gz
+SUBREADS: /share/pool/CompGenomVert/RawData/catfish_07A7_05B2/HIFI/m64346e_230609_155715.subreads.bam
+HIFI: "" #"/share/pool/CompGenomVert/RefGenomes/collomic_catfish/m64346e_230609_155715/kraken/output_decontam_hifireads/kraken_unclassified.fq" #DATA/m54345U_220213_143410_220303_154000.deepconsensusFiltered.fq.gz
 HIC1: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/fPhoPho_R001_S001_R1.fastq.gz
 HIC2: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/fPhoPho_R001_S001_R2.fastq.gz
 ENZYMES: 'GATC,GANTC,CTNAG,TTAA'
 FILE_PREFIX: phophogenome143410
+ADAPTERS: HiFiAdapterFilt/DB
+
+# path to a locally installed merquryFK initialized with make:
+# https://github.com/thegenemyers/MERQURY.FK
+# don't include the last backslash
+MERQURY_DIR: "/home/ychrysostomakis/MERQURY.FK-1.0.0"
+
+FASTK_MODULE: "fastk/current"
+GCC_MODULE: "gcc/11.2.0"
+GENOMESCOPE_MODULE: "genescopefk/current"
+GATK_MODULE: "gatk/4.4.0.0"
+SALSA2_MODULE: "salsa2/2.3"
+
+
+# load module with latest deepconsensus or specify how to run it on your system
+# if you have a different version edit the checkpoint file
+# if you have installed it another way, edit this string or 
+#edit the code directly to load the program effectively
+DEEPCONSENSUS_RUN_METHOD: "module load deepconsensus/1.2.0"
+
+# path to deepconsensus version checkpoint model location
+DEEPCONSENSUS_MODEL_CHECKPOINT: "model/1.2/checkpoint"
+
+#include final backslash
+BUSCO_DATASET_FOLDER: "/share/pool/databases/busco_downloads_v5/"
+
+# kraken database of your choice. can be downloaded from:
+# https://benlangmead.github.io/aws-indexes/k2
+KRAKEN_DB: "/share/pool/databases/kraken"
+
+# choose a confidence level you feel comfortable with.
+# kraken confidence scores are not obvious to set yet
+# start understanding confidence scores here:
+# https://github.com/DerrickWood/kraken2/wiki/Manual#confidence-scoring
+KRAKEN_CONFIDENCE: 0.51
 
 # Specify which operations to run, accepted values: True, False
-DO_BUSCO: False
-DO_HIC: False
-DO_FASTK: True
-DO_CCS: False
-DO_DEDUP: False
+DO_BUSCO: True
+DO_HIC: True
+DO_STATS: True
+DO_CCS: True
+DO_DEDUP: True
+DO_ADAPT_FILT: True
+DO_CONTACT_MAP: True
 
 # a convenient way to only run hifiasm. Niche -- might remove or redesign in the future depending on what's added to the pipeline
 STOP_AT_HIFIASM: False
+
+

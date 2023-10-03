@@ -2,31 +2,33 @@
 #$ -S /bin/bash
 #$ -cwd
 #$ -j n
-#$ -q medium.q
+#$ -q large.q
+#$ -pe smp 100
 #$ -N genome_assembly
-#$ -pe smp 60
 #$ -M i.chrysostomakis@leibniz-lib.de
 #$ -m beas
 
 module load anaconda3/2022.05
-conda activate genome_assembly
+conda activate genofish
 
 #one core will be used by snakemake to monitor the other processes
+
 THREADS=$(expr ${NSLOTS} - 1)
 
 snakemake \
-    --snakefile snakemake_hic \
+    --snakefile snakemake_sgehic.smk \
     --keep-going \
-    --latency-wait 60 \
-    --use-envmodules \
-    --use-conda \
-    --cores ${THREADS} \
+    --latency-wait 300 \
+    -j ${THREADS} \
+    --default-resources "tmpdir='/share/pool/ychrysostomakis/tmp'" \
     --verbose \
+    --use-conda \
+    --use-envmodules \
     --printshellcmds \
     --reason \
-    --resources mem_mb=1000 \
-    --default-respources "tmpdir='./tmp'" \
-    --nolock 
-    
-    #--rerun-triggers mtime
+    --nolock \
+    --rerun-triggers mtime \
+    --rerun-incomplete --conda-create-envs-only --until HIFIASM  \
+    --stats "./stats.json" \
+    --report "./report.html"
 
