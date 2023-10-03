@@ -1,7 +1,8 @@
-name: yahs
+name: smudgeplot
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - smudgeplot
+  - kmc

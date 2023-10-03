@@ -1,7 +1,9 @@
-name: yahs
+name: multiqc
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - yahs
+ - multiqc=1.16
+ - fastqc=0.11.8
+ - python=3.7

@@ -1,7 +1,7 @@
-name: yahs
+name: minimap2
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - minimap2=2.26

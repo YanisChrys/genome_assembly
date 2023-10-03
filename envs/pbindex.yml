@@ -1,7 +1,8 @@
-name: yahs
+name: pbindex
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - pbbam
+  

@@ -1,11 +1,9 @@
-name: merqury
+name: genome_assembly
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   - purge_dups 
-  - merqury
   - pbmm2 
   - pbccs 
   - pbgcpp 
@@ -27,6 +25,4 @@ dependencies:
   - r-base 
   - r-minpack.lm 
   - busco
-  - gcc=11.2
-
 

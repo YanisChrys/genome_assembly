@@ -1,0 +1,8 @@
+name: tadpole
+channels:
+  - conda-forge
+  - bioconda
+  - agbiome
+  - defaults
+dependencies:
+  - bbmap==39.01

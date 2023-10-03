@@ -1,7 +1,7 @@
-name: yahs
+name: gfastats
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - gfastats

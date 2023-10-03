@@ -1,7 +1,9 @@
-name: yahs
+name: ccs
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - pbccs 
+  - pbgcpp 
+  

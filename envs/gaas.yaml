@@ -1,0 +1,6 @@
+name: gaas
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - gaas 

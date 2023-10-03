@@ -1,7 +1,7 @@
-name: yahs
+name: seqkit
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - seqkit

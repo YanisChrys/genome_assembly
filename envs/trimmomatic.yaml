@@ -1,7 +1,7 @@
-name: yahs
+name: trimmomatic
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - trimmomatic=0.36

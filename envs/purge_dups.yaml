@@ -1,7 +1,7 @@
-name: yahs
+name: purgedups
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - purge_dups

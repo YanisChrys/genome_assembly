@@ -1,0 +1,8 @@
+name: combine
+channels: 
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - perl
+  - samtools=1.17

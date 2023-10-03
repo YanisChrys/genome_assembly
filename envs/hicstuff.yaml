@@ -1,7 +1,9 @@
-name: yahs
+name: hicstuff
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - yahs
+  - python=3.9
+  - hicstuff=3.2.1
+  - pairtools

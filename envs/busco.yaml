@@ -1,7 +1,7 @@
-name: yahs
+name: busco
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - yahs
+  - busco=4.1.2
