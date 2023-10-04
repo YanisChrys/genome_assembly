@@ -139,8 +139,7 @@ rule REMOVE_DUPLICATE_MAPPINGS:
         "RESULTS/LOG/HIC_{basename}.picdedup.log"
     envmodules:
         config["GATK_MODULE"]
-    shell: """
-        #-XX:MaxPermSize=1g -XX:+CMSClassUnloadingEnabled  
+    shell: """ 
         gatk MarkDuplicates -XX:ParallelGCThreads={threads} -Xmx2g --REMOVE_DUPLICATES true \
         -I {input.sorted} -O {output.deduped} -M {output.metrics} \
         --ASSUME_SORT_ORDER "coordinate" --MAX_FILE_HANDLES_FOR_READ_ENDS_MAP 1024 --SORTING_COLLECTION_SIZE_RATIO 0.1 --MAX_RECORDS_IN_RAM 250000
