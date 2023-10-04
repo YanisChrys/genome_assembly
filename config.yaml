@@ -7,7 +7,7 @@
 # CORES: number of threads PER chunk of ccs partition. To change the number of cores used by the workflow specify them when submitting the jobscript
 # number of threads to use
 
-CHUNKS: 5
+CHUNKS: 100
 CORES: 10
 
 # LOGLEVEL: log level for ccs, values: #TRACE, DEBUG, INFO, WARN, FATAL
@@ -22,18 +22,17 @@ INDEX_SPLIT: 200G
 # if using HIFI copy it to the working directory
 # ENZYMES: specify multiuple enzymes with comma without space -- need the sequence not the name
 # FILE_PREFIX: prefix for output names, all non characters will be removed
-SUBREADS: /share/pool/CompGenomVert/RawData/catfish_07A7_05B2/HIFI/m64346e_230609_155715.subreads.bam
-HIFI: "" #"/share/pool/CompGenomVert/RefGenomes/collomic_catfish/m64346e_230609_155715/kraken/output_decontam_hifireads/kraken_unclassified.fq" #DATA/m54345U_220213_143410_220303_154000.deepconsensusFiltered.fq.gz
-HIC1: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/fPhoPho_R001_S001_R1.fastq.gz
-HIC2: /share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/fPhoPho_R001_S001_R2.fastq.gz
-ENZYMES: 'GATC,GANTC,CTNAG,TTAA'
-FILE_PREFIX: phophogenome143410
+SUBREADS: /path/to/subreads/identifier.subreads.bam
+HIFI: /path/tohifireads/another_identifier.[fq|fastq|fast.gz|fq.gz]
+HIC1: /path/to/hicreads/Hic_identifier_R1.fastq.gz
+HIC2: /path/to/hicreads/Hic_identifier_R1.fastq.gz
+FILE_PREFIX: MySpecies123
 ADAPTERS: HiFiAdapterFilt/DB
 
 # path to a locally installed merquryFK initialized with make:
 # https://github.com/thegenemyers/MERQURY.FK
 # don't include the last backslash
-MERQURY_DIR: "/home/ychrysostomakis/MERQURY.FK-1.0.0"
+MERQURY_DIR: "/home/user/MERQURY.FK-1.0.0"
 
 FASTK_MODULE: "fastk/current"
 GCC_MODULE: "gcc/11.2.0"
@@ -52,11 +51,11 @@ DEEPCONSENSUS_RUN_METHOD: "module load deepconsensus/1.2.0"
 DEEPCONSENSUS_MODEL_CHECKPOINT: "model/1.2/checkpoint"
 
 #include final backslash
-BUSCO_DATASET_FOLDER: "/share/pool/databases/busco_downloads_v5/"
+BUSCO_DATASET_FOLDER: "/path/to/busco_downloads/"
 
 # kraken database of your choice. can be downloaded from:
 # https://benlangmead.github.io/aws-indexes/k2
-KRAKEN_DB: "/share/pool/databases/kraken"
+KRAKEN_DB: "/path/to/databases/kraken"
 
 # choose a confidence level you feel comfortable with.
 # kraken confidence scores are not obvious to set yet
@@ -64,14 +63,17 @@ KRAKEN_DB: "/share/pool/databases/kraken"
 # https://github.com/DerrickWood/kraken2/wiki/Manual#confidence-scoring
 KRAKEN_CONFIDENCE: 0.51
 
+# path to salsa bin file where one can find the file filter_five_end.pl
+SALSA2_BIN_FOLDER: /path/to/salsa2/bin
+
 # Specify which operations to run, accepted values: True, False
-DO_BUSCO: True
-DO_HIC: True
-DO_STATS: True
 DO_CCS: True
 DO_DEDUP: True
 DO_ADAPT_FILT: True
+DO_BUSCO: True
+DO_HIC: True
 DO_CONTACT_MAP: True
+DO_STATS: True
 
 # a convenient way to only run hifiasm. Niche -- might remove or redesign in the future depending on what's added to the pipeline
 STOP_AT_HIFIASM: False

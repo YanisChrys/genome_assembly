@@ -55,6 +55,10 @@ You later need to provide the checkpoint folder  of this model inside the *confi
 ### Filter PacBio Adapters
 Find and save PacBio adapters using the custom script *`utils/pbadapterfilt.sh`*. Rename the result to *`pacbio_vectors_db`* and place it inside the *`DATA/HiFiAdapterFilt/DB/`* folder.
 
+### Salsa2
+
+We use 2 scripts provided by Salsa2. Download Salsa locally and provide the pipeline with a path to the bin folder.
+
 ### Kraken decontamination
 
 This pipeline also always runs a decontamination step with kraken2.

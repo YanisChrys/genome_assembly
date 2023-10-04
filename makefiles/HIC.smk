@@ -54,11 +54,12 @@ rule FILTER_5PRIME_ALIGNMENT:
     log:
         "RESULTS/LOG/HIC.{basename}_{hic}.filter_r1.log"
     params:
-        chunk=config["CHUNKS"]
+        chunk=config["CHUNKS"],
+        salsa_bin=config["SALSA2_BIN_FOLDER"]
     conda:
         "../envs/samtools.yaml"
     shell: """
-        samtools view -h  {input.rawhic1} | perl /share/scientific_bin/salsa2/2.3/bin/filter_five_end.pl | \
+        samtools view -h  {input.rawhic1} | perl {params.salsa_bin}/filter_five_end.pl | \
         samtools view -@ {threads} -b - > {output.filtrawhic1}
     """
 
@@ -77,10 +78,12 @@ rule COMBINE_HICR1_AND_HICR2:
         workflow.cores
     conda:
         "../envs/combine_perls.yaml"
+    params:
+        salsa_bin=config["SALSA2_BIN_FOLDER"]
     envmodules:
         config["SALSA2_MODULE"]
     shell: """
-        perl /share/scientific_bin/salsa2/2.3/bin/two_read_bam_combiner.pl {input.hicfiles} samtools 10 | \
+        perl {params.salsa_bin}/two_read_bam_combiner.pl {input.hicfiles} samtools 10 | \
         samtools view -@ {threads} -b -t {input.faidxfile} - > {output}
     """
 
