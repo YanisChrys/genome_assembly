@@ -101,7 +101,9 @@ conda activate genome_assembly
 You can then use install the environments used by the different rules of the pipeline in a terminal with an internet connection:
 
 ```
-#conda activate genome_assembly
+# conda activate genome_assembly
+snakemake --snakefile snakefile snakefile.smk--cores 5 -p -r -w 5 --verbose --use-conda  --conda-create-envs-only
+# second pipeline for processing HiC data
 snakemake --snakefile PROCESS_HIC_READS.smk --cores 5 -p -r -w 5 --verbose --use-conda  --conda-create-envs-only
 ```
 

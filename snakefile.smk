@@ -1,25 +1,13 @@
 # Snakemake Pipeline for HiFi Genome Assemblies
-# Version: 1.0.0
 # This pipeline processes HiFi Genome Assemblies
-
-# Notes and tips for running:
-
-# genome assembly pipeline
-# to run per chromosome, meaning there is only 1 input each time
-# must provide the appropriate setting that you need to use
-# and a prefix for the file
-# f string concatenation not available in version of Python below 3.6
-
-
-
-import re
-import os
 
 # Note:
 # - Make sure the config.yaml file is properly configured
 
 ### Load Configurations ###
 
+import re
+import os
 configfile: "config.yaml"
 
 ############  SET UP PATH TO INPUT FILES AND FILE NAME STEMS AND SAVE THEM AS WILDCARDS  ############
