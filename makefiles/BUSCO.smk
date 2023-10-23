@@ -20,7 +20,7 @@ rule BUSCO:
         "RESULTS/LOG/{basename}_{db}.busco.log"
     params:
         dataset_dir=config["BUSCO_DATASET_FOLDER"],
-        out_dir="RESULTS/BUSCO/",
+        out_dir="RESULTS/BUSCO/{basename}/",
         run_name=PREFIX,
         lineage=config["LINEAGE"],
         plot_wd="RESULTS/BUSCO/{basename}/{basename}/"
