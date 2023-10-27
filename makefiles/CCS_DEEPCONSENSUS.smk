@@ -125,6 +125,6 @@ rule FILTER_ADAPTERS_OR_RENAME:
             cp ../../../../DATA/{params.my_prefix}.merged.ccs.filt.fastq.gz ../../../../{output}
             rm ../../../../DATA/{params.my_prefix}.merged.ccs.filt.fastq.gz
         else
-            mv -n {input} {output}
+            gzip -c {input} > {output}
         fi
     """
