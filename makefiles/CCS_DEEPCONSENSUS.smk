@@ -124,6 +124,8 @@ rule FILTER_ADAPTERS_OR_RENAME:
             bash ../../../../utils/pbadapterfilt.sh -p {params.my_basename} -o ../../../../DATA/
             cp ../../../../DATA/{params.my_prefix}.merged.ccs.filt.fastq.gz ../../../../{output}
             rm ../../../../DATA/{params.my_prefix}.merged.ccs.filt.fastq.gz
+        elif file {input} | grep -q "gzip"; then
+            mv {input} {output}
         else
             gzip -c {input} > {output}
         fi

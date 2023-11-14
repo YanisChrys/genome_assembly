@@ -17,6 +17,5 @@ snakemake \
     --nolock \
     --rerun-triggers mtime \
     --rerun-incomplete \
-    --stats "./stats.json" \
-    --report "./report.html"
+    --stats "./stats.json"
 

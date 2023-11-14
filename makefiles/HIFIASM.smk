@@ -10,7 +10,7 @@
 
 rule HIFIASM:
     input:
-        "DATA/DECONTAMINATED/" + PREFIX + "_kraken_unclassified.fq"
+        "DATA/DECONTAMINATED/" + PREFIX + "_kraken_unclassified.fq.gz"
     output:
         "RESULTS/GENOME_ASSEMBLY/" + PREFIX + ".p_ctg.gfa",
         "RESULTS/GENOME_ASSEMBLY/" + PREFIX + ".a_ctg.gfa"
