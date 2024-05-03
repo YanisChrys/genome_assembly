@@ -1,0 +1,8 @@
+name: pbmm2
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - pbmm2=1.13
+  - samtools

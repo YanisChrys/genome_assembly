@@ -1,8 +1,8 @@
-name: smudgeplot
+name: meryl
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - smudgeplot
-  - meryl=1.4
+ - meryl=1.4
+ - flash2

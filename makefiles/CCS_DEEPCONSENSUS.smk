@@ -29,41 +29,43 @@
 # deepconsensus model can ben downloaded from 
 # https://console.cloud.google.com/storage/browser/brain\
 #-genomics-public/research/deepconsensus/models/v1.2/model_checkpoint?pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%255D%22))
-rule CCS:
+rule ccs:
     input:
-        config["SUBREADS"]
+        config["subreads"]
     output:
         bamo=temp("RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.bam"),
         index=temp("RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.bam.pbi"),
         metrics="RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}_metrics.json.gz",
         rprt="RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}_report.txt"
     params:
-        loglevel=config["LOGLEVEL"],
-        chunk="{chunknumber}/%s" % config["CHUNKS"]
+        loglevel=config["ccs"]["loglevel"],
+        chunk="{chunknumber}/%s" % config["ccs"]["chunks"]
     threads:
-        config["CORES"]
+        config["ccs"]["cores"]
     log:
         "RESULTS/LOG/PREPROCESSING.CCS_PACBIO." + PREFIX + "_{chunknumber}.ccs.log"
     conda:
         "../envs/deepconsensus_ccs.yaml"
     shell: """
         ccs {input} {output.bamo} \
-        --min-rq=0.88 \
+        --min-rq=0.95 \
         --num-threads {threads} \
         --chunk {params.chunk} \
         --log-level {params.loglevel} --log-file {log} --report-file {output.rprt} --metrics-json {output.metrics}
     """
 
-rule ACTC:
+# align subreads to CCS reads.
+rule actc:
     input:
-        ori_subs=config["SUBREADS"],
+        ori_subs=config["subreads"],
         ccs_subs="RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.bam"
     output:
         touch("RESULTS/PREPROCESSING/CCS_PACBIO/ACTC/" + PREFIX + "_{chunknumber}.subreads_to_ccs_actc.bam")
     threads:
-        config["CORES"]
+        config["ccs"]["cores"]
     conda:
         "../envs/actc.yaml"
+    priority: 1
     shell: """
         actc -j {threads}  \
         {input.ori_subs} \
@@ -71,17 +73,18 @@ rule ACTC:
         {output}
     """
 
-rule DEEPCONSENSUS:
+#  create new corrected reads in FASTQ format
+rule deepconsensus:
     input:
         actc_subs="RESULTS/PREPROCESSING/CCS_PACBIO/ACTC/" + PREFIX + "_{chunknumber}.subreads_to_ccs_actc.bam",
         ccs_subs="RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.bam"
     output:
         temp("RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.fastq")
     params:
-        model=config["DEEPCONSENSUS_MODEL_CHECKPOINT"],
-        deepconsensus_run_method=config["DEEPCONSENSUS_RUN_METHOD"]
-    threads: 
-        15
+        model=config["modules"]["deepconsensus"]["model_checkpoint"],
+        deepconsensus_run_method=config["modules"]["deepconsensus"]["run_method"]
+    threads:
+        min(workflow.cores,15)
     shell: """
         {params.deepconsensus_run_method}
 
@@ -90,43 +93,44 @@ rule DEEPCONSENSUS:
         --ccs_bam={input.ccs_subs} \
         --checkpoint={params.model} \
         --output={output} \
+        --batch_zmws 50 \
         --cpus {threads}
     """
 
-rule MERGE_DEEPCONSENSUS_FILES:
+rule merge_deepconsensus_files:
     input:
-        expand("RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.fastq",chunknumber=CHUNK_NMB, prefix=PREFIX)
+        expand("RESULTS/PREPROCESSING/CCS_PACBIO/" + PREFIX + "_{chunknumber}.ccs.fastq",chunknumber=CHUNK_NMB)
     output:
-        "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/" + PREFIX + ".merged.ccs.fastq"
+        "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/" + PREFIX + "_merged_ccs.fastq"
     shell: """
         cat {input} > {output}
     """
 
 # you should be able to do adapter filtering with hifi from the run or from the config file
-rule FILTER_ADAPTERS_OR_RENAME:
+# optionally create a blast db of your adapters
+rule filter_adapters:
     input:
-        lambda wildcards: "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/" + PREFIX + ".merged.ccs.fastq" if DO_CCS else config["HIFI"]
+        lambda wildcards: "RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/" + PREFIX + "_merged_ccs.fastq" if DO_CCS else config["hifi"]
     output:
-        "DATA/" + PREFIX + ".fastq.gz"
-        # filtfq=temp("DATA/" + PREFIX + ".merged.ccs.filt.fastq.gz") if DO_ADAPT_FILT else "DATA/" + PREFIX + ".fastq.gz"
+        "DATA/" + PREFIX + ".filtered.fastq.gz"
     conda:
         "../envs/adapterfilt.yaml"
     priority: 1
     params:
-        my_basename=PREFIX + ".merged.ccs",
-        my_prefix=PREFIX,
-        adapt_filt=str(DO_ADAPT_FILT).lower()  # Convert the boolean to a lowercase string ("true" or "false")
+        my_prefix=lambda wildcards, input: os.path.basename(input[0]).replace('.fq.gz', '').replace('.fastq.gz', '')
+    threads:
+        workflow.cores
     shell: """
-        if [ "{params.adapt_filt}" = "true" ]; then
             #makeblastdb -in $PWD/DATA/HiFiAdapterFilt/DB/* -dbtype nucl
             export PATH=$PATH:$PWD/DATA/HiFiAdapterFilt/DB
-            cd RESULTS/PREPROCESSING/CCS_PACBIO/MERGED/
-            bash ../../../../utils/pbadapterfilt.sh -p {params.my_basename} -o ../../../../DATA/
-            cp ../../../../DATA/{params.my_prefix}.merged.ccs.filt.fastq.gz ../../../../{output}
-            rm ../../../../DATA/{params.my_prefix}.merged.ccs.filt.fastq.gz
-        elif file {input} | grep -q "gzip"; then
-            mv {input} {output}
-        else
-            gzip -c {input} > {output}
-        fi
+
+            cp -n {input} DATA/
+            cp -n utils/pbadapterfilt.sh DATA/
+            cd DATA
+
+            bash pbadapterfilt.sh -p {params.my_prefix} -l 45 -t {threads}
+
+            mv -n {params.my_prefix}.filt.fastq.gz ../{output}
+            rm -f $(basename {input})
     """
+    

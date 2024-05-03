@@ -1,0 +1,109 @@
+# Configuration file for genome assembly workflow.
+# this is deisgned to be the user's point of contact with the workflow, 
+# any adjustments or inputs are intended to be placed here.
+
+#### CUSTOM OPTIONS
+
+ccs: 
+  chunks: 100 # partition parts of ccs to parallelize and run faster
+  cores: 10 # threads PER chunk of ccs partition. To change the number of cores used by the workflow specify them when submitting the jobscript
+  loglevel: INFO # LOGLEVEL: log level for ccs, values: #TRACE, DEBUG, INFO, WARN, FATAL
+
+index_split: 200G # INDEX_SPLIT: "split index for every ~NUM input bases" relevant for minimap2. Defuult = 4G
+
+# list of strings and dictionary that hold the options we want to use with hifiasm
+# note that all combinations will be explored 
+
+HIFIASM_OPTIONS:
+  #hifiasm_base: ""
+  #hifiasm_incpert: "--n-weight 5 --n-perturb 75000 --f-perturb 0.5"
+  hifiasm_incpert_D10N150: "--n-weight 5 --n-perturb 75000 --f-perturb 0.5 -D 10 -N 150 -s 0.4"
+  #hifiasm_incpert_D10N150hom40: "--n-weight 5 --n-perturb 75000 --f-perturb 0.5 -D 10 -N 150 -s 0.2 --hom-cov 40"
+
+HIFIASM_PURGE:
+  #- "l0"
+  #- "l1"
+  - "l2"
+  - "l3"
+
+
+#### DATA PATHS
+
+# ENZYMES: specify multiuple enzymes with comma without space -- need the sequence not the name
+subreads: '' #/share/pool/CompGenomVert/RawData/DresdenPhoxinus22062022/m54345U_220213_143410.subreads.bam # must be a single file
+
+# hifi must be a single file 
+# there can be no other f*q*,.bam files in the folder with the same basename as this file
+hifi: /share/pool/CompGenomVert/RawData/EpiAus/RawData/HIFI/combined/m54345U_221031_103837_m64046_221108_221952_m64046_230413_092956.fq.gz
+hic1: /share/pool/CompGenomVert/RawData/EpiAus/RawData/HIC/combined/L122780_Track-168665-171038_R1.fastq.gz
+hic2: /share/pool/CompGenomVert/RawData/EpiAus/RawData/HIC/combined/L122780_Track-168665-171038_R2.fastq.gz
+file_prefix: EpiAus_202401_3SMRT # prefix for output names, all non-characters will be removed
+adapters: HiFiAdapterFilt/DB 
+
+busco:
+  dataset_folder: "/share/pool/databases/busco_downloads_v5/" #include final backslash
+  lineage: sauropsida_odb10
+
+#### MODULES & PROGRAMS & TOOLS
+
+# path to a locally installed merquryFK initialized with make:
+# https://github.com/thegenemyers/MERQURY.FK
+
+modules: 
+  merqury: 
+    path: "~/MERQURY.FK-1.0.0" # don't include the last backslash
+  fastk: 
+    path: "fastk/current"
+    kmer: 21 # KMER: kmer size for fastk
+  gcc: 
+    path: "gcc/11.2.0"
+  genomescope: 
+    path: "genescopefk/current"
+  gatk: 
+    path: "gatk/4.2.6.1"
+  salsa2: 
+    path: "salsa2/2.3"
+    bin_folder: "/share/scientific_bin/salsa2/2.3/bin/" # path to salsa bin where one can find the file filter_five_end.pl
+  nextpolish:
+    run_method: "module load bbmap/38.37 bwa/0.7.15 samtools/1.9.0"
+    multithread_jobs: 2
+    parallel_jobs: 5
+  deepconsensus: 
+    # load module with latest deepconsensus or specify how to run it on your system
+    # if you have a different version edit the checkpoint file
+    # if you have installed it another way, edit this string or 
+    # edit the code directly to load the program effectively
+    run_method: "module load deepconsensus/1.2.0"
+    # path to deepconsensus version checkpoint model location
+    model_checkpoint: "model/1.2/checkpoint"
+  meryl:
+    kmer: 21
+  bandage:
+    kmer: 21
+
+
+# choose a confidence level you feel comfortable with.
+# kraken confidence scores are not obvious to set
+# start understanding confidence scores here:
+# creates a kmer database of each read and maps those kmers to its own db
+# https://www.biostars.org/p/403434/
+# https://github.com/DerrickWood/kraken2/issues/265
+# https://github.com/DerrickWood/kraken2/wiki/Manual#confidence-scoring
+kraken: 
+  confidence: 0.51
+  # kraken database of your choice. can be downloaded from:
+  # https://benlangmead.github.io/aws-indexes/k2
+  db: "/share/pool/databases/kraken"
+
+# Specify which operations to run, accepted values: True, False
+DO_CCS: False # deepcponsensus etc 
+DO_DEDUP: False #purgedups
+DO_ADAPT_FILT: False  
+DO_BUSCO: True 
+DO_HIC: False # scaffolding
+DO_VISUALIZE: False 
+DO_STATS: True 
+INCLUDE_HIC: False # include hic in hifiasm run
+
+# a convenient way to only run hifiasm. Niche -- might remove or redesign in the future depending on what's added to the pipeline
+STOP_AT_HIFIASM: False

@@ -1,8 +1,8 @@
-name: smudgeplot
+name: bcftools
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - smudgeplot
-  - meryl=1.4
+  - bcftools
+  - tabix

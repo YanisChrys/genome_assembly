@@ -24,43 +24,42 @@
 
 # - Scaffold the assembly using Hi-C data.
 #   - Program: YaHS.
-
-rule MAP_HIC_TO_ASSEMBLY:
+# -B8: penalty for mismatch 8 from 4 default
+rule map_hic_to_assembly:
     input:
-        fasta=lambda wildcards: get_input(wildcards, HIFIASM_FILES, HIFIASM_BASENAMES, 'basename'),
+        fasta="RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta",
         hic_reads=lambda wildcards: get_input(wildcards, HIC_READ_FILES, HIC_BASENAMES,'hic')
     output:
-        temp("RESULTS/HIC/RAW/{basename}_{hic}.bam")
+        "RESULTS/HIC/RAW/{basename}_{hic}.bam"
     threads:
-        workflow.cores
-    params:
-        chunk=config["CHUNKS"]
+        min(workflow.cores,30)
     conda:
         "../envs/bwa.yaml"
     shell: """
-        bwa index {input.fasta}
-        bwa mem -t{threads} -B8 {input.fasta} {input.hic_reads} | samtools view -b - > {output}
+        bwa-mem2 index {input.fasta}
+        # increased mismatch penalty compared to default
+        bwa-mem2 mem -t {threads} -B8 {input.fasta} {input.hic_reads} | \
+        samtools view -@ {threads} -Sb -o {output} -
     """
 
 # Filter for 5’-most alignment for each read, scripts are salsa 2 scripts
 
-rule FILTER_5PRIME_ALIGNMENT:
+rule filter_5prime_alignment:
     input:
         rawhic1="RESULTS/HIC/RAW/{basename}_{hic}.bam"
     output:
-        filtrawhic1=temp("RESULTS/HIC/FILTERED/{basename}_{hic}_filtered.bam")
+        filtrawhic1="RESULTS/HIC/FILTERED/{basename}_{hic}_filtered.bam"
     threads:
-        workflow.cores
+        min(workflow.cores,15)
     log:
         "RESULTS/LOG/HIC.{basename}_{hic}.filter_r1.log"
     params:
-        chunk=config["CHUNKS"],
-        salsa_bin=config["SALSA2_BIN_FOLDER"]
+        salsa_bin=config["modules"]["salsa2"]["bin_folder"]
     conda:
         "../envs/samtools.yaml"
     shell: """
-        samtools view -h  {input.rawhic1} | perl {params.salsa_bin}/filter_five_end.pl | \
-        samtools view -@ {threads} -b - > {output.filtrawhic1}
+        samtools view -h {input.rawhic1} | perl {params.salsa_bin}/filter_five_end.pl samtools 10 | \
+        samtools view -@ {threads} -Sb - > {output.filtrawhic1}
     """
 
 # Combine read 1 and 2 maps with mapq>10 (!)
@@ -68,97 +67,104 @@ rule FILTER_5PRIME_ALIGNMENT:
 # uses the .fai index of our assembly to index the hic data
 # perl script:
 # <read 1 bam> <read 2 bam> <path to samtools> <minimum map quality filter>
-rule COMBINE_HICR1_AND_HICR2:
+rule combine_hicr1_and_hicr2:
     input:
-        hicfiles=expand("RESULTS/HIC/FILTERED/{basename}_{hic}_filtered.bam", hic=HIC_BASENAMES,basename=HIFIASM_BASENAMES),
-        faidxfile="RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa.fai"
+        hicfiles=[
+            "RESULTS/HIC/FILTERED/{basename}_"+HIC_BASENAMES[0]+"_filtered.bam",
+            "RESULTS/HIC/FILTERED/{basename}_"+HIC_BASENAMES[1]+"_filtered.bam"],
+        faidxfile="RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta.fai"
     output:
-        temp("RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads.bam")
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads.bam"
     threads:
-        workflow.cores
+        min(workflow.cores,15)
     conda:
         "../envs/combine_perls.yaml"
     params:
-        salsa_bin=config["SALSA2_BIN_FOLDER"]
+        salsa_bin=config["modules"]["salsa2"]["bin_folder"]
     envmodules:
-        config["SALSA2_MODULE"]
+        config["modules"]["salsa2"]["path"]
     shell: """
-        perl {params.salsa_bin}/two_read_bam_combiner.pl {input.hicfiles} samtools 10 | \
-        samtools view -@ {threads} -b -t {input.faidxfile} - > {output}
+        perl {params.salsa_bin}/two_read_bam_combiner.pl {input.hicfiles} samtools 30 | \
+        samtools view -@ {threads} -Sb -t {input.faidxfile} - > {output}
     """
 
 # --RGLB \ -LB    null    Read-Group library
 # --RGPL \ -PL    null    Read-Group platform (e.g. ILLUMINA, SOLID)
 # --RGPU \ -PU    null    Read-Group platform unit (eg. run barcode)
 # --RGSM \ -SM    null    Read-Group sample name
-rule ADD_READ_GROUP:
+
+
+
+rule sort_hic:
     input:
         "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads.bam"
     output:
-        temp("RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_withRG.bam")
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted.bam"
     threads:
-        workflow.cores
+        min(workflow.cores,5)
+    conda:
+        "../envs/samtools.yaml"
+    shell: """
+        samtools sort -@ {threads} -m 5G -O bam -o {output} {input}
+    """
+
+rule add_read_group:
+    input:
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted.bam"
+    output:
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG.bam"
+    threads:
+        min(workflow.cores,10)
     log:
         "RESULTS/LOG/HIC_{basename}.combine.log"
     params:
-        prefix=PREFIX,
-        label=SAMPLE_LABEL
+        prefix=PREFIX
     envmodules:
-        config["GATK_MODULE"]
+        config["modules"]["gatk"]["path"]
     shell: """ 
-        gatk AddOrReplaceReadGroups \
+        gatk AddOrReplaceReadGroups --java-options "-Xmx5g" \
         -I {input} -O {output} \
-        -ID {params.prefix} -LB {params.label} -SM {params.label} -PL ILLUMINA -PU none
+        -ID {params.prefix} -LB lib_{params.prefix} -SM lib_{params.prefix} -PL ILLUMINA -PU none
     """
 
-rule SORT_HIC:
+# SORTING_COLLECTION_SIZE_RATIO: help avoid running out of memory
+# MAX_FILE_HANDLES_FOR_READ_ENDS_MAP: maximum number of open files
+# MAX_RECORDS_IN_RAM: reduce amount of ram needed
+rule remove_duplicate_mappings:
     input:
-        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_withRG.bam"
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG.bam"
     output:
-        sorted=temp("RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_sorted.bam")
-    threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/HIC.COMBINED.DEDUPED_{basename}.samtoolssort1.log"
-    params:
-        chunk=config["CHUNKS"]
-    conda:
-        "../envs/samtools.yaml"
-    shell: """
-        mkdir RESULTS/HIC/COMBINED/DEDUPED/TEMP/
-        samtools sort -@ {threads} -m 1G -O bam -o {output.sorted} {input}
-    """
-
-
-rule REMOVE_DUPLICATE_MAPPINGS:
-    input:
-        sorted="RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_sorted.bam"
-    output:
-        deduped=temp("RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_deduped.bam"),
+        deduped="RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG_deduped.bam",
         metrics="RESULTS/HIC/COMBINED/DEDUPED/{basename}_picard_hic_deduped_metrics.txt"
     threads:
-        workflow.cores
+        min(workflow.cores,10)
     log:
         "RESULTS/LOG/HIC_{basename}.picdedup.log"
     envmodules:
-        config["GATK_MODULE"]
+        config["modules"]["gatk"]["path"]
     shell: """ 
-        gatk MarkDuplicates -XX:ParallelGCThreads={threads} -Xmx2g --REMOVE_DUPLICATES true \
-        -I {input.sorted} -O {output.deduped} -M {output.metrics} \
-        --ASSUME_SORT_ORDER "coordinate" --MAX_FILE_HANDLES_FOR_READ_ENDS_MAP 1024 --SORTING_COLLECTION_SIZE_RATIO 0.1 --MAX_RECORDS_IN_RAM 250000
+        gatk MarkDuplicates --java-options "-Xmx5g" --REMOVE_DUPLICATES true \
+        -I {input} -O {output.deduped} -M {output.metrics} \
+        --ASSUME_SORT_ORDER "coordinate" \
+        --MAX_FILE_HANDLES_FOR_READ_ENDS_MAP 1024 \
+        --SORTING_COLLECTION_SIZE_RATIO 0.1 \
+        --MAX_RECORDS_IN_RAM 250000
     """
 
-rule RE_SORT_HIC:
+# yahs input bam needs to be aligned by read name
+rule re_sort_hic:
     input:
-        deduped="RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_deduped.bam"
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG_deduped.bam"
     output:
-        resorted=touch("RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_deduped_resorted.bam")
+        resorted="RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG_deduped_resorted.bam",
+        flagstat="RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_deduped_resorted_flagstat.tsv"
     threads:
-        workflow.cores
+        min(workflow.cores,15)
     conda:
         "../envs/samtools.yaml"
     shell: """
-        samtools sort -@ {threads} -n -m 1G -O bam -o {output.resorted} {input.deduped}
+        samtools sort -@ {threads} -n -m 5G -O bam -o {output.resorted} {input}        
+        samtools flagstat -O tsv {output.resorted} > {output.flagstat}
     """
 
 ############ YAHS ############
@@ -169,15 +175,17 @@ rule RE_SORT_HIC:
 
 # -e {params.enzymes} add this with an if statement when enzymes is given
 # YaHS can only handle up to 45,000 contigs. Consider excluding short contigs from scaffolding (with -l option) if the contig number exceeds this limit.
-rule YAHS:
+# yahs has an upper limit of 45000 contigs. Do not run if you have more
+rule yahs:
     input:
-        hic_bam="RESULTS/HIC/COMBINED/DEDUPED/{basename}_mapped_hic_reads_withRG_deduped_resorted.bam",
-        fasta="RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa",
-        fai="RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa.fai"
+        hic_bam="RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG_deduped_resorted.bam",
+        fasta="RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta",
+        fai="RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta.fai"
     output:
         "RESULTS/HIC/YAHS/{basename}_yahs_scaffolds_final.fa"
     threads:
-        workflow.cores
+        min(workflow.cores,20)
+    priority: 1
     params:
         dir="RESULTS/HIC/YAHS/{basename}_yahs"
     conda:
@@ -185,3 +193,26 @@ rule YAHS:
     shell: """
         yahs {input.fasta} {input.hic_bam} -o {params.dir} 
     """
+
+# input for pretext
+# hic stats, etc
+rule map_scaf2hic:
+    input:
+        fasta=lambda wildcards: get_input(wildcards, SCAF_FILES, SCAF_BASENAMES, 'basename'),
+        hic1=HIC1,
+        hic2=HIC2
+    output:
+        "RESULTS/HIC/BAM4VIZ/{basename}.bam"
+    threads:
+        min(workflow.cores,60)
+    conda:
+        "../envs/bwa.yaml"
+    params:
+        rggroup = "'@RG\tID:{basename}\tSM:{basename}\tLB:{basename}\tPL:ILLUMINA'"
+    shell: """
+        bwa-mem2 index {input.fasta}
+        bwa-mem2 mem -t{threads} -B8 -M -R {params.rggroup} {input.fasta} {input.hic1} {input.hic2} | \
+        samtools view -@ {threads} -Sb - | samtools sort -@ {threads} -o {output} -
+    """
+
+

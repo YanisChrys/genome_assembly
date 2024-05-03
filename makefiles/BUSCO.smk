@@ -9,21 +9,21 @@
 
 #"RESULTS/BUSCO/" + PREFIX + "/run_{db}/missing_busco_list.tsv"
 
-rule BUSCO:
+rule busco:
     input:
         lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename')
     output:
-        "RESULTS/BUSCO/{basename}/{basename}/run_{db}/missing_busco_list.tsv"
+        summary="RESULTS/BUSCO/{basename}/short_summary.specific.{db}.{basename}.txt",
+        missing="RESULTS/BUSCO/{basename}/run_{db}/missing_busco_list.tsv"
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}_{db}.busco.log"
+        min(workflow.cores,20)
+    priority: 1
     params:
-        dataset_dir=config["BUSCO_DATASET_FOLDER"],
-        out_dir="RESULTS/BUSCO/{basename}/",
-        run_name=PREFIX,
-        lineage=config["LINEAGE"],
-        plot_wd="RESULTS/BUSCO/{basename}/{basename}/"
+        dataset_dir=config["busco"]["dataset_folder"],
+        out_dir="RESULTS/BUSCO/",
+        run_name="{basename}",
+        lineage=config["busco"]["lineage"],
+        plot_wd="RESULTS/BUSCO/{basename}/"
     conda:
         "../envs/busco.yaml"
     shell: """
@@ -35,6 +35,19 @@ rule BUSCO:
         --out_path {params.out_dir} \
         -l {params.lineage} \
         --offline
+    """
+
+rule busco_plots:
+    input: 
+        expand("RESULTS/BUSCO/{basename}/short_summary.specific.{db}.{basename}.txt",basename=ASSEMBLY_BASENAMES, db=config["busco"]["lineage"])
+    output: 
+        "RESULTS/BUSCO/busco_figure.png"
+    params:
+        plot_wd="RESULTS/BUSCO/"
+    conda:
+        "../envs/busco.yaml"
+    shell: """
+        cp -n {input} {params.plot_wd}
 
         generate_plot.py -q -wd {params.plot_wd}
     """

@@ -1,0 +1,6 @@
+name: genome_assembly
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - genomescope2

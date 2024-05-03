@@ -1,43 +1,35 @@
 ############ Purge erroneous duplications ############
 
-
 # Programs and Descriptions in current file:
-# Split the FASTA file wherever 'N' nucleotides occur.
-#   - Program: Custom script (`split_fa`) from purge_dups package.
+# Split the FASTA file wherever 'N' nucleotides occur 
+# with a custom script (`split_fa`) from purge_dups package.
 
-# - Map the assembly to itself to identify regions of similarity.
-#   - Program: Minimap2.
+# - Map the assembly to itself to identify regions of simility with minimap2.
 
-# - Map the split genome to HiFi reads.
-#   - Program: Minimap2.
+# - Map the split genome to HiFi reads with minimap2.
 
-# - Calculate the base-level coverage for the mapped reads.
-#   - Program: `pbcstat`.
+# - Calculate the base-level coverage for the mapped reads with `pbcstat`.
 
-# - Determine coverage thresholds to differentiate between haploid and diploid regions.
-#   - Program: `calcuts`.
+# - Determine coverage thresholds to differentiate between haploid and diploid regions with `calcuts`.
 
-# - Purge Duplicates
-#   - Program: `purge_dups`.
+# - Purge Duplicates with `purge_dups`.
 
 # - Extract sequences that are not marked as duplicates with get_seqs.
-#   - Program: `get_seqs` from purgedups package.
 
-# - Index the purged sequences
-#   - Program: Samtools (`samtools faidx`).
+# - Index the purged sequences with `samtools faidx`
 
 
 # split fasta file where Ns occur
-
-rule SPLIT_AT_Ns:
+# this way of generating the input has two functions:
+# 1) it finds the correct file and 
+# 2) it introduces the basename wildcard to the rule which can then be used downstream
+rule split_at_ns:
     input:
         lambda wildcards: get_input(wildcards, HIFIASM_FILES, HIFIASM_BASENAMES, 'basename')
     output:
         temp("RESULTS/PURGE_DUPS/{basename}_split.fasta")
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}.split_fa.log"
+        5
     conda:
         "../envs/purge_dups.yaml"
     shell: """
@@ -47,68 +39,64 @@ rule SPLIT_AT_Ns:
 # xasm5=asm-to-ref mapping, for ~0.1 sequence divergence (assembly to self)
 # -I=split index for every ~NUM input bases
 
-rule MINIMAP2_GENOME_TO_SELF:
+rule minimap2_genome_to_self:
     input:
         "RESULTS/PURGE_DUPS/{basename}_split.fasta"
     output:
-        temp("RESULTS/MINIMAP2/{basename}_genome_split.paf")
+        "RESULTS/MINIMAP2/{basename}_genome_split.paf"
     threads:
-        workflow.cores
+        min(workflow.cores,20)
     params:
-        i_split=config["INDEX_SPLIT"]
+        i_split=config["index_split"]
     conda:
         "../envs/minimap2.yaml"
     shell: """
-        minimap2 -I {params.i_split} -t {threads} -xasm5 -DP {input} {input} > {output}
+        minimap2 -I {params.i_split} -t {threads} -x asm5 -DP {input} {input} > {output}
     """
-
-rule MINIMAP2_GENOME_TO_READS:
+#-x asm20
+rule minimap2_genome_to_reads:
     input:
         splitf="RESULTS/PURGE_DUPS/{basename}_split.fasta",
-        hifi_reads=lambda wildcards: "DATA/" + PREFIX + ".fastq.gz" if SUBREADS else config["HIFI"]
+        hifi_reads="DATA/DECONTAMINATED/" + PREFIX + "_kraken_unclassified.fq.gz"
     output:
-        temp("RESULTS/MINIMAP2/{basename}_reads_split.paf")
+        "RESULTS/MINIMAP2/{basename}_reads_split.paf"
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}.minimap2b.log"
+        min(workflow.cores,20)
     params:
-        i_split=config["INDEX_SPLIT"]
+        i_split=config["index_split"]
     conda:
         "../envs/minimap2.yaml"
     shell: """
-        minimap2 -I {params.i_split} -t {threads} -x map-pb {input.splitf} {input.hifi_reads} > {output}
+        minimap2 -I {params.i_split} -t {threads} -x map-hifi {input.splitf} {input.hifi_reads} > {output}
     """
+
 
 #Calculate haploid/diploid coverage threshold and remove haplotype duplicates from assembly
 
-rule PBCSTAT:
+rule pbcstat:
     input:
         "RESULTS/MINIMAP2/{basename}_reads_split.paf"
     output:
         basecov="RESULTS/PURGE_DUPS/{basename}/PB.base.cov",
         stat="RESULTS/PURGE_DUPS/{basename}/PB.stat" #, PB.cov.wig
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}.pbcstat.log"
+        5
     params:
         prefix="RESULTS/PURGE_DUPS/{basename}"
     conda:
         "../envs/purge_dups.yaml"
     shell: """
         pbcstat -O {params.prefix} {input}
+        #python3 scripts/hist_plot.py -c cutoff_file PB.stat PB.cov.png
     """
 
-rule CALCUTS:
+rule calcuts:
     input:
         "RESULTS/PURGE_DUPS/{basename}/PB.stat"
     output:
         "RESULTS/PURGE_DUPS/{basename}/cutoffs"
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}.calcuts.log"
+        5
     params:
         prefix="RESULTS/PURGE_DUPS/{basename}"
     conda:
@@ -116,8 +104,8 @@ rule CALCUTS:
     shell: """
         calcuts {input} > {output}
     """
-
-rule PURGE_DUPS:
+#  python3 hist_plot.py -c cutoffs PB.stat PB.cov.png
+rule purge_dups:
     input:
         basecov="RESULTS/PURGE_DUPS/{basename}/PB.base.cov",
         cutoffs="RESULTS/PURGE_DUPS/{basename}/cutoffs",
@@ -125,41 +113,41 @@ rule PURGE_DUPS:
     output:
         temp("RESULTS/PURGE_DUPS/{basename}_dups.bed")
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}.purge_dups.log"
+        5
     conda:
         "../envs/purge_dups.yaml"
     shell: """
         purge_dups -2 -c {input.basecov} -T {input.cutoffs} {input.genome_paf} > {output}
     """
 
-rule GET_SEQS:
+rule get_seqs:
     input:
         purge_duped="RESULTS/PURGE_DUPS/{basename}_dups.bed",
         fasta="RESULTS/GENOME_ASSEMBLY/{basename}.fasta"
     output:
-        "RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa"
+        "RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta"
     threads:
-        workflow.cores
-    log:
-        "RESULTS/LOG/{basename}.get_seqs.log"
+        5
     params:
-        prefix="RESULTS/PURGE_DUPS/{basename}_seqs_purged"
+        prefix="RESULTS/PURGE_DUPS/{basename}_seqs_purged",
+        getseqsoutput="RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa"
     conda:
         "../envs/purge_dups.yaml"
+    priority: 1
     shell: """
         get_seqs -e -p {params.prefix} {input.purge_duped} {input.fasta}
+        mv {params.getseqsoutput} {output}
     """
-
-
-rule INDEX_SEQS:
+#-e
+rule index_seqs:
     input:
-        "RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa"
+        "RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta"
     output:
-        "RESULTS/PURGE_DUPS/{basename}_seqs_purged.hap.fa.fai"
+        "RESULTS/PURGE_DUPS/{basename}_seqs_purged.fasta.fai"
     conda:
         "../envs/samtools.yaml"
+    threads:
+        5
     shell: """
         samtools faidx {input}
     """

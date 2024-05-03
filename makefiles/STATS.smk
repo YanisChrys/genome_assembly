@@ -8,15 +8,13 @@
 # - KatGC: Used for generating 3D heat map or contour map of the frequency of a k-mer versus its' GC content in rule KATGC.
 # - MerquryFK: Used for evaluating the completeness of the assembly in rule MerquryFK.
 # - PloidyPlot: Used for generating ploidy plots in rule PLOIDYPLOT.
-# - GAAS: Used for generating assembly statistics in rule gaas.
 # - QUAST: Used for evaluating assembly quality in rule quast.
 # - GT SEQSTATS: Used for generating sequence statistics in rule gtseqstat.
 # - GFASTATS: Used for generating GFA statistics in rule gfastats.
 
-
-rule SEQKIT_HIFI_STATS:
+rule seqkit_hifi_stats:
     input:
-        lambda wildcards: "DATA/" + PREFIX + ".fastq.gz" if SUBREADS else config["HIFI"]
+        "DATA/DECONTAMINATED/" + PREFIX + "_kraken_unclassified.fq.gz"
     output:
         "RESULTS/STATISTICS/SEQKIT/" + PREFIX + ".ccs.readStats.txt"
     priority: 1
@@ -26,8 +24,7 @@ rule SEQKIT_HIFI_STATS:
         seqkit stats -a {input} > {output}
     """
 
-
-rule FASTQ_HIC_STATS:
+rule fastq_hic_stats:
     input:
         "RESULTS/HIC/YAHS/" + PREFIX + "_yahs_scaffolds_final.fa"
     output:
@@ -39,154 +36,90 @@ rule FASTQ_HIC_STATS:
         seqkit stats -a {input} > {output}
 """
 
-
 # FastK
 # kmers are k-sized string chunks - here it is DNA
 # FastK splits the DNA into kmers and counts how many timers it sees each one
 # need to provide absolute path of the module's locations
 # See the README.mk for the prerequisite steps to running the programs from Fastk and Merqury packages
-rule FASTK:
+rule meryl:
     input:
-        lambda wildcards: "DATA/" + PREFIX + ".fastq.gz" if SUBREADS else config["HIFI"]
+        "DATA/DECONTAMINATED/" + PREFIX + "_kraken_unclassified.fq.gz"
     output:
-        ktab=touch("RESULTS/STATISTICS/FASTK/" + PREFIX + ".ktab"),
-        hist=touch("RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist")
+        directory("RESULTS/STATISTICS/FASTK/" + PREFIX + ".meryl")
     threads:
-        workflow.cores
+        min(workflow.cores,15)
     priority: 1
     params:
-        out="RESULTS/STATISTICS/FASTK/" + PREFIX,
-        kmers=config["KMER"]
-    envmodules:
-        config["FASTK_MODULE"]
+        wd="RESULTS/STATISTICS/FASTK/",
+        out=PREFIX + ".meryl",
+        kmers=config["modules"]["meryl"]["kmer"]
+    conda:
+        "../envs/meryl.yaml"
     shell: """
-        FastK -v -t1 -T{threads} -k{params.kmers} -N{params.out} {input}
+        cd {params.wd}
+        meryl count k={params.kmers} ../../../{input} threads={threads} memory=200g output {params.out}
     """
 
 ############  GENOME SIZE ESTIMATE WITH GENESCOPE.FK  ############
+rule meryl_hist:
+    input:
+        "RESULTS/STATISTICS/FASTK/" + PREFIX + ".meryl"
+    output:
+        "RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist"
+    conda:
+        "../envs/meryl.yaml"
+    threads:
+        1
+    shell:
+        "meryl histogram {input} > {output}"
 
-# Histex histograg=input for Genescope.FK
-# Simplify FastK hist table
-# h=frequencies to be displayed
-# NOTE: consider exploring alterantive h values
-rule HISTEX:
+rule genomescope:
     input:
         "RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist"
     output:
-        "RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist.txt"
-    priority: 1
-    log:
-        "RESULTS/LOG/STATISTICS.FASTK." + PREFIX + ".histex.log"
-    envmodules:
-        config["FASTK_MODULE"]
-    shell: """
-        Histex -G {input} -h1000 > {output}
-    """
-
-
-# Genescope.FK
-#  plots describing genome properties such as genome size, heterozygosity, and repetitiveness
-# it will fail if there isn't enough data
-rule GENESCOPE_FK:
-    input:
-        "RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist.txt"
-    output:
-        progress=touch("RESULTS/STATISTICS/FASTK/genescopeFK/" + PREFIX + "_progress.txt"),
-        summary="RESULTS/STATISTICS/FASTK/genescopeFK/" + PREFIX + "_summary.txt"
+        "RESULTS/STATISTICS/FASTK/" + PREFIX + "_genomescope/summary.txt"
+    conda:
+        "../envs/genomescope.yaml"
     threads:
-        workflow.cores
-    priority: 1
-    log:
-        "RESULTS/LOG/STATISTICS.FASTK." + PREFIX + ".GeneScopeFK.log"
+        1
     params:
-        inputprefix=PREFIX,
-        outfolder="RESULTS/STATISTICS/FASTK/genescopeFK",
-        kmers=config["KMER"]
-    envmodules:
-        config["FASTK_MODULE"],
-        config["GENOMESCOPE_MODULE"]
-    shell: """
-        GeneScopeFK.R -i {input} -o {params.outfolder} -k {params.kmers} --ploidy 2 --num_rounds 4 -n {params.inputprefix}
-    """
+        outdir = "RESULTS/STATISTICS/FASTK/" + PREFIX + "_genomescope",
+        ploidy=2,
+        kmer=config["modules"]["meryl"]["kmer"]
+    shell:
+        "genomescope2 -p {params.ploidy} -k {params.kmer} -i {input} -o {params.outdir}"
+
+
 
 ############  READ ANALYSIS  ############
-##########  MERQURY.FK MODULE  ##########
 
-# KatGC
-# 3D heat map or contour map of the frequency of a k-mer versus its' GC content
-# input=FastK ktab file (auto-detected)
-# needs to move to directory where it will find the files
-rule KATGC:
+
+rule smudgeplot:
     input:
-        hist="RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist",
-        ktab="RESULTS/STATISTICS/FASTK/" + PREFIX + ".ktab"
+        db="RESULTS/STATISTICS/FASTK/" + PREFIX + ".meryl",
+        hist="RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist"
     output:
-        png1="RESULTS/STATISTICS/FASTK/" + PREFIX + ".st.png",
-        png2="RESULTS/STATISTICS/FASTK/" + PREFIX + ".fi.png",
-        png3="RESULTS/STATISTICS/FASTK/" + PREFIX + ".ln.png"
-    threads:
-        workflow.cores
-    priority: 1
+        "RESULTS/STATISTICS/FASTK/" + PREFIX + ".png"
     conda:
-        "../envs/merqury.yaml"
-    envmodules:
-        config["FASTK_MODULE"]
+        "../envs/smudgeplot.yaml"
+    threads:
+        min(workflow.cores,10)
     params:
-        my_prefix=PREFIX
+        prefix=PREFIX,
+        outdir="RESULTS/STATISTICS/FASTK"
     shell: """
-        cd RESULTS/STATISTICS/FASTK/
-        KatGC -T{threads} {params.my_prefix} {params.my_prefix}
+        L=$(smudgeplot.py cutoff {input.hist} L)
+        U=$(smudgeplot.py cutoff {input.hist} U)
+
+        meryl print less-than 1500 greater-than 10 threads={threads} memory=10G {input.db} | sort | \
+        smudgeplot.py hetkmers -o {params.outdir}/{params.prefix}_L${{L}}_U${{U}} 
+        smudgeplot_plot.R -L ${{L}} -i {params.outdir}/{params.prefix}_L${{L}}_U${{U}}_coverages.tsv -o {params.outdir}/{params.prefix}
     """
 
-rule MerquryFK:
-    input:
-        hist="RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist",
-        ktab="RESULTS/STATISTICS/FASTK/" + PREFIX + ".ktab",
-        asm=lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename')
-    output:
-        "RESULTS/STATISTICS/FASTK/{basename}.completeness.stats"
-    threads:
-        workflow.cores
-    priority: 1
-    conda:
-        "../envs/merqury.yaml"
-    params:
-        merqury_dir=config['MERQURY_DIR']
-    envmodules:
-        config["FASTK_MODULE"]
-    shell: """
-        export PATH=$PATH:{params.merqury_dir} 
-        export PATH=$PATH:{params.merqury_dir}/*
-        cd RESULTS/STATISTICS/FASTK/
-        MerquryFK -T{threads} {wildcards.basename} ../../../{input.asm} {wildcards.basename}
-    """
-
-rule PLOIDYPLOT:
-    input:
-        hist="RESULTS/STATISTICS/FASTK/" + PREFIX + ".hist",
-        ktab="RESULTS/STATISTICS/FASTK/" + PREFIX + ".ktab"
-    output:
-        "RESULTS/STATISTICS/FASTK/PLOIDYPLOT/" + PREFIX + ".png"
-    threads:
-        min(workflow.cores,5)
-    priority: 1
-    params:
-        merqury_dir=config['MERQURY_DIR'],
-        my_prefix=PREFIX
-    envmodules:
-        config["FASTK_MODULE"]
-    conda:
-        "../envs/merqury.yaml"
-    shell: """
-        export PATH=$PATH:{params.merqury_dir} 
-        export PATH=$PATH:{params.merqury_dir}/*
-        cd RESULTS/STATISTICS/FASTK/
-        PloidyPlot -T{threads} -vk -pdf -oPLOIDYPLOT/{params.my_prefix} {params.my_prefix}
-    """
 
 # ASSEMBLY STATS
 
-rule SEQKIT_ASSEMBLY_STATS:
+rule seqkit_assembly_stats:
     input:
         lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename')
     output:
@@ -198,30 +131,18 @@ rule SEQKIT_ASSEMBLY_STATS:
         seqkit stats -a {input} > {output}
     """
 
-rule gaas:
-    input:
-        lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename')
-    output:
-        "RESULTS/STATISTICS/GAAS/{basename}_gaasstats.txt"
-    priority: 1
-    conda:
-        "../envs/gaas.yaml"
-    shell: """
-        gaas_fasta_statistics.pl -f {input} > {output}
-    """
-
 # QUAST
 
 rule quast:
     input:
         contigs = lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename')
     output:
-        "RESULTS/STATISTICS/{basename}_hifiasm/quast/quast.log"
+        "RESULTS/STATISTICS/QUAST/{basename}/quast.log"
     threads: 
         min(workflow.cores,20)
     priority: 1
     params:
-        "RESULTS/STATISTICS/{basename}_hifiasm/quast"
+        "RESULTS/STATISTICS/QUAST/{basename}"
     conda:
         "../envs/quast.yaml"
     shell: """
@@ -236,16 +157,16 @@ rule quast:
 
 # GT SEQSTATS
 
-
+# extract genome size to a file to help snakemake know it needs to be calculated before running the stats
 rule extractgenomeSize:
     input:
-        genescope_output="RESULTS/STATISTICS/FASTK/genescopeFK/" + PREFIX + "_summary.txt"
+        genescope_output="RESULTS/STATISTICS/FASTK/" + PREFIX + "_genomescope/summary.txt"
     output:
         genome_size_file="RESULTS/STATISTICS/" + PREFIX + "_genome_size.txt"
-    run:
-        genome_size = extract_max_genome_haploid_length(input.genescope_output)
-        with open(output.genome_size_file, 'w') as f:
-            f.write(str(genome_size))
+    params:
+        genome_size = lambda wildcards, input: extract_max_genome_haploid_length(input.genescope_output)
+    shell:
+        "echo {params.genome_size} > {output.genome_size_file}"
 
 rule gtseqstat:
     input:
@@ -268,7 +189,7 @@ rule gtseqstat:
 
 rule gfastats:
     input:
-        fasta= lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename'),
+        fasta=lambda wildcards: get_input(wildcards, ASSEMBLY_FILES, ASSEMBLY_BASENAMES, 'basename'),
         genome_size_file="RESULTS/STATISTICS/" + PREFIX + "_genome_size.txt"
     output:
         "RESULTS/STATISTICS/GFASTATS/{basename}_gfastats_report.txt"
@@ -278,15 +199,92 @@ rule gfastats:
         min(workflow.cores,10)
     priority: 1
     params:
-        genome_size=lambda wildcards, input: open(input.genome_size_file).read().strip()
+        genome_size=lambda wildcards, input: str(int(open(input.genome_size_file).read().strip()))
     shell: """
         gfastats \
-        --input-sequence {input.fasta} \
+        {input.fasta} \
         {params.genome_size} \
-        --tabular \
         --threads {threads} \
-        --out-bubbles \
+        --tabular \
         --nstar-report \
-        --seq-report \
-        --out-size scaffolds > {output}
+        --seq-report  > {output}
+    """
+
+# --discover-paths \
+# --out-size scaffolds \
+
+rule qualimap:
+    input:
+        "RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG_deduped.bam"
+    output:
+        report="RESULTS/STATISTICS/QUALIMAP/{basename}/report.pdf"
+    conda:
+        "../envs/qualimap.yaml"
+    threads:
+        min(workflow.cores,10)
+    params:
+        dir="RESULTS/STATISTICS/QUALIMAP/{basename}/"
+    shell: """
+        qualimap bamqc -bam {input} -c -outdir {params.dir} -outformat pdf -nt {threads} --java-mem-size=10G
+    """
+
+# visualize
+
+rule pretext:
+    input:
+        bam="RESULTS/HIC/COMBINED/{basename}_mapped_hic_reads_sorted_withRG_deduped.bam"
+    output:
+        pretext="RESULTS/STATISTICS/PRETEXT/{basename}.pretext"
+    conda:
+        "../envs/pretext.yaml"
+    threads:
+        min(workflow.cores,5)
+    shell: """
+        samtools view -h {input.bam} | PretextMap -o {output.pretext}
+        PretextSnapshot -m {output.pretext} -f png -r 1000 -c 5 --sequences '=full' --minTexels 64 --gridSize 1 --gridColour black '' -o output --prefix contigs
+    """
+
+rule hicstuff_pipeline:
+    input:
+        scaf_genom=lambda wildcards: get_input(wildcards, SCAF_FILES, SCAF_BASENAMES, 'scaff_basename'),
+        hic1=HIC1,
+        hic2=HIC2
+    output:
+        "RESULTS/STATISTICS/HICSTUFF/{scaff_basename}/abs_fragments_contacts_weighted.cool",
+        "RESULTS/STATISTICS/HICSTUFF/{scaff_basename}/fragments_list.txt"
+    threads:
+        min(workflow.cores,20)
+    conda:
+        "../envs/hicstuff.yaml"
+    params:
+        outdir="RESULTS/HICSTUFF/{scaff_basename}"
+    shell: """
+        hicstuff pipeline \
+            -t {threads} \
+            --matfmt="cool" \
+            --plot \
+            --duplicates \
+            --distance-law \
+            --genome {input.scaf_genom} \
+            --outdir {params.outdir} \
+            {input.hic1} \
+            {input.hic2}
+    """
+
+
+rule hicstuff_view_no_binning:
+    input:
+        frags="RESULTS/STATISTICS/HICSTUFF/{scaff_basename}/fragments_list.txt",
+        matrix="RESULTS/STATISTICS/HICSTUFF/{scaff_basename}/abs_fragments_contacts_weighted.cool"
+    output:
+        "RESULTS/STATISTICS/HICSTUFF/{scaff_basename}/{scaff_basename}_map.png"        
+    conda:
+        "../envs/hicstuff.yaml"
+    threads:
+        min(workflow.cores,20)
+    shell: """
+        hicstuff view \
+        --normalize \
+        --frags ${input.frags} ${input.matrix} \
+        --output {output}
     """

@@ -1,8 +1,8 @@
-name: smudgeplot
+name: pretext
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - smudgeplot
-  - meryl=1.4
+  - pretext-suite
+  - samtools=1.17

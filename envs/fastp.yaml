@@ -1,8 +1,7 @@
-name: smudgeplot
+name: fastp
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - smudgeplot
-  - meryl=1.4
+  - fastp=0.23
