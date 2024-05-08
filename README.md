@@ -43,7 +43,9 @@ You can incorporate HiC reads into the Hifiasm run or not regardless of whether 
 
 ### Flye
 
-Given that Flye is easier to run and has fewer options to choose from it is implemented into a separate script found [here](flye.sh). 
+Given that Flye is easier to run and has fewer options to choose from it is implemented into a separate script found [here](flye.sh). Commented out are two self-explanatory options : --scaffold --keep-haplotypes, which can be used if wanted/needed.
+
+There is also a snakefile for running FLYE but is unused and is given only for inspiration on how it could work.
 
 ### Polishing
 
