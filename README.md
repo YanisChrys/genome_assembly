@@ -47,13 +47,13 @@ Given that Flye is easier to run and has fewer options to choose from it is impl
 
 There is also a snakefile for running FLYE but is unused and is given only for inspiration on how it could work.
 
+### Statistics
+
+In this directory [(here)](./stats) you can also find a standalone script for doing post-assembly analysis on either flye or subsequent assemblies (curated, polished, etc)
+
 ### Polishing
 
 In here you can also find a folder with polishing scripts that use deepvariant, hypo or nextplish independently. You can then pass any of them as input to the other and use the scripts under [stats](./stats/) for analysis.
-
-### Statistics
-
-In this directory you can also find a standalone script for doing post-assembly analysis on either flye or subsequent assemblies (curated, polished, etc)
 
 ### BUSCO
 
