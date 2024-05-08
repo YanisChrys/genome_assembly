@@ -1,0 +1,61 @@
+asm_path: "/path/to/RESULTS/HIC/YAHS/"
+#"/path/to/RESULTS/HIC/YAHS/EpiAus_202401_3SMRT_hifiasm_incpert_D10N150_l2_alternate_yahs_scaffolds_final.fa"
+
+
+file_prefix: "EpiAus_202401_3SMRT_hifiasm_incpert_D10N150_l2_primary_yahs_scaffolds_final"
+reads: "/path/to/DATA/DECONTAMINATED/EpiAus_202401_3SMRT_kraken_unclassified.fastq.gz"
+
+hic1: "/path/to/L122780_Track-168665-171038_R1.fastq.gz"
+hic2: "/path/to/L122780_Track-168665-171038_R2.fastq.gz"
+
+
+run: "nextpolish"
+
+BAMSPLIT_THREADS: 6
+BGZIP_THREADS: 6
+MERQURY_REF: 1
+MERYL_K: 19
+# genome size estimate from genomescope or from own knowledge
+genome_size: 1869647118
+total_read_length: 73171129647
+
+
+busco:
+  dataset_folder: "/share/pool/databases/busco_downloads_v5/" #include final backslash
+  lineage: sauropsida_odb10
+
+modules: 
+  merqury: 
+    path: "~/MERQURY.FK-1.0.0" # don't include the last backslash
+  fastk: 
+    path: "fastk/current"
+    kmer: 31 # KMER: kmer size for fastk
+  gcc: 
+    path: "gcc/11.2.0"
+  genomescope: 
+    path: "genescopefk/current"
+  gatk: 
+    path: "gatk/4.2.6.1"
+  salsa2: 
+    path: "salsa2/2.3"
+    bin_folder: "/share/scientific_bin/salsa2/2.3/bin/" # path to salsa bin where one can find the file filter_five_end.pl
+  nextpolish:
+    bbmap: bbmap/38.82 
+    bwa: bwa/0.7.17-r1198 
+    samtools: samtools/1.8
+    multithread_jobs: 10
+    parallel_jobs: 5
+    path: "/home/ychrysostomakis/NextPolish"
+  deepconsensus: 
+    # load module with latest deepconsensus or specify how to run it on your system
+    # if you have a different version edit the checkpoint file
+    # if you have installed it another way, edit this string or 
+    # edit the code directly to load the program effectively
+    run_method: "module load deepconsensus/1.2.0"
+    # path to deepconsensus version checkpoint model location
+    model_checkpoint: "model/1.2/checkpoint"
+  meryl:
+    kmer: 31
+  bandage:
+    kmer: 31
+

@@ -1,0 +1,1 @@
+standalone stats calculation for individual assembly files

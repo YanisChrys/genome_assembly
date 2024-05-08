@@ -1,0 +1,7 @@
+name: meryl
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+ - meryl

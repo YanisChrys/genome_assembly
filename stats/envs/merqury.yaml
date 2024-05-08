@@ -1,0 +1,32 @@
+name: merqury
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - purge_dups 
+  - merqury=1.3
+  - pbmm2 
+  - pbccs 
+  - pbgcpp 
+  - r-essentials 
+  - r-argparse 
+  - r-ggplot2 
+  - r-scales 
+  - r-viridis 
+  - samtools 
+  - snakemake 
+  - bcftools 
+  - seqkit 
+  - freebayes 
+  - hifiasm 
+  - bam2fastx 
+  - bwa 
+  - pairtools 
+  - pairix 
+  - r-base 
+  - r-minpack.lm 
+  - busco
+  - gcc=11.2
+
+

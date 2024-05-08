@@ -1,0 +1,8 @@
+name: bandage
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bandage_ng
+  - gfastats

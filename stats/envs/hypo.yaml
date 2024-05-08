@@ -1,0 +1,11 @@
+name: hypo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - actc=0.2
+  - minimap2=2.16 
+  - samtools=1.9.0 
+  - gcc=9.2.0 
+  - hypo=1.0.3

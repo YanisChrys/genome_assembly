@@ -1,0 +1,9 @@
+name: hicstuff
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - hicstuff=3.2.1
+  - pairtools

@@ -1,0 +1,33 @@
+genomes: 
+  - "/share/pool/CompGenomVert/EpiAus/workflow/RESULTS/HIC/YAHS/EpiAus_202401_3SMRT_hifiasm_incpert_D10N150_l2_primary_yahs_scaffolds_final.fa"
+#"/share/pool/CompGenomVert/EpiAus/workflow/RESULTS/HIC/YAHS/EpiAus_202401_3SMRT_hifiasm_incpert_D10N150_l2_alternate_yahs_scaffolds_final.fa"
+
+file_prefix: "EpiAus_202401_3SMRT_hifiasm_incpert_D10N150_l2_primary_yahs_scaffolds_final"
+reads: 
+  - "/share/pool/CompGenomVert/EpiAus/workflow/DATA/DECONTAMINATED/EpiAus_202401_3SMRT_kraken_unclassified.fastq.gz"
+
+# not used but just in case it's needed
+hic_reads:
+  hic1: /share/pool/CompGenomVert/EpiAus/workflow/RESULTS/HICREADS/QC/L122780_Track-168665-171038_corrected_R1.fastq.gz
+  hic2: /share/pool/CompGenomVert/EpiAus/workflow/RESULTS/HICREADS/QC/L122780_Track-168665-171038_corrected_R2.fastq.gz
+
+# type of assembly to be analysed; used as an identifier for merqury
+run: "purge_dups"
+
+#
+busco:
+  dataset_folder: "/share/pool/databases/busco_downloads_v5/" #include final backslash
+  lineage: sauropsida_odb10
+
+# estimated by genescope. Should run separately
+genome_size: 1900000000 # genome size estimate from genomescope or from own knowledge
+
+# can be estimated with seqkit stats on the reads
+total_read_length: 7371129647
+
+
+
+meryl:
+  kmer: 31
+bandage:
+  kmer: 31

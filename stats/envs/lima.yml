@@ -1,0 +1,9 @@
+name: lima
+channels: 
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - snakemake>=4
+  - lima
+

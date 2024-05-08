@@ -1,0 +1,8 @@
+name: pretext
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pretext-suite=0.1.9
+  - samtools=1.17

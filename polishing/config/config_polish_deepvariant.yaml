@@ -1,0 +1,57 @@
+asm_path: "/path/to/RESULTS/HIC/YAHS/"
+
+reads: "/path/to/DATA/DECONTAMINATED/EpiAus_202401_3SMRT_kraken_unclassified.fq.gz"
+
+run: "deepvariant"
+
+BAMSPLIT_THREADS: 6
+BGZIP_THREADS: 6
+MERQURY_REF: 1
+MERYL_K: 19
+# genome size estimate from genomescope or from own knowledge
+genome_size: 1869647118
+total_read_length: 73171129647
+
+pbmm2: 
+  ops: "--sort -m 20G -N 1 --preset HIFI"
+
+busco:
+  dataset_folder: "/share/pool/databases/busco_downloads_v5/" #include final backslash
+  lineage: aves_odb10
+
+BLOCK_SIZE: 200000000    ## 200M by default 
+
+modules: 
+  merqury: 
+    path: "~/MERQURY.FK-1.0.0" # don't include the last backslash
+  fastk: 
+    path: "fastk/current"
+    kmer: 30 # KMER: kmer size for fastk
+  gcc: 
+    path: "gcc/11.2.0"
+  genomescope: 
+    path: "genescopefk/current"
+  gatk: 
+    path: "gatk/4.2.6.1"
+  salsa2: 
+    path: "salsa2/2.3"
+    bin_folder: "/share/scientific_bin/salsa2/2.3/bin/" # path to salsa bin where one can find the file filter_five_end.pl
+  nextpolish:
+    bbmap: bbmap/38.82 
+    bwa: bwa/0.7.17-r1198 
+    samtools: samtools/1.8
+    multithread_jobs: 2
+    parallel_jobs: 5
+    path: "/home/ychrysostomakis/NextPolish"
+  deepconsensus: 
+    # load module with latest deepconsensus or specify how to run it on your system
+    # if you have a different version edit the checkpoint file
+    # if you have installed it another way, edit this string or 
+    # edit the code directly to load the program effectively
+    run_method: "module load deepconsensus/1.2.0"
+    # path to deepconsensus version checkpoint model location
+    model_checkpoint: "model/1.2/checkpoint"
+  meryl:
+    kmer: 30
+  bandage:
+    kmer: 30

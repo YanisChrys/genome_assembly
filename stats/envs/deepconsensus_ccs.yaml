@@ -1,0 +1,9 @@
+name: ccs
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pbccs 
+  - pbgcpp 
+  

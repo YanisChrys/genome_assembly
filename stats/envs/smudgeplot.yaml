@@ -1,0 +1,8 @@
+name: smudgeplot
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - smudgeplot
+  - kmc

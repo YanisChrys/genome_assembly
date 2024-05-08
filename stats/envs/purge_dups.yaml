@@ -1,0 +1,7 @@
+name: purgedups
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - purge_dups

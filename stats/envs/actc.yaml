@@ -1,0 +1,7 @@
+name: actc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - actc=0.2

@@ -1,0 +1,8 @@
+name: hifiadapterfilt
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - blast==2.13.0
+  - bamtools
+  - pigz

@@ -1,0 +1,27 @@
+name: genome_assembly
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - purge_dups 
+  - pbmm2 
+  - pbccs 
+  - pbgcpp 
+  - r-essentials 
+  - r-argparse 
+  - r-ggplot2 
+  - r-scales 
+  - r-viridis 
+  - samtools 
+  - snakemake 
+  - bcftools 
+  - seqkit 
+  - freebayes 
+  - hifiasm 
+  - bam2fastx 
+  - bwa 
+  - pairtools 
+  - pairix 
+  - r-base 
+  - r-minpack.lm 
+  - busco
