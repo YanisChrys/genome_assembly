@@ -4,4 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - busco=4.1.2
+  - busco=5

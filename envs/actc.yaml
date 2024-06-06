@@ -4,4 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - actc
+  - actc=0.2

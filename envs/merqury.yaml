@@ -4,29 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - purge_dups 
-  - merqury
-  - pbmm2 
-  - pbccs 
-  - pbgcpp 
-  - r-essentials 
-  - r-argparse 
-  - r-ggplot2 
-  - r-scales 
-  - r-viridis 
-  - samtools 
-  - snakemake 
-  - bcftools 
-  - seqkit 
-  - freebayes 
-  - hifiasm 
-  - bam2fastx 
-  - bwa 
-  - pairtools 
-  - pairix 
-  - r-base 
-  - r-minpack.lm 
-  - busco
-  - gcc=11.2
+  - merqury=1.3
 
 
